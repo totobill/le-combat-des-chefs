@@ -1,18 +1,31 @@
 {
-  "name": "Le Combat des Chefs",
-  "short_name": "Chefs",
-  "description": "Séminaire — épreuves et classement live",
+  "name": "Adwise Survivor — Le Combat des Chefs",
+  "short_name": "Survivor",
+  "description": "Séminaire Adwise — épreuves, équipes et classement en direct",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0d0d14",
-  "theme_color": "#5b5ef5",
+  "background_color": "#1a0f0a",
+  "theme_color": "#c45c26",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "48x48",
-      "type": "image/x-icon"
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -12,13 +12,21 @@ header {
     letter-spacing: 0.08em;
   }
 
-  .title {
+  .title,
+  .board-title {
     font-size: clamp(32px, 6vw, 56px);
     line-height: 1;
 
     span {
       color: var(--primary);
     }
+  }
+
+  .board-sub {
+    font-size: 18px;
+    color: #e8a060;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
   }
 
   .live {
