@@ -1,0 +1,70 @@
+<div class="board">
+  <header>
+    <div class="label">CLASSEMENT EN DIRECT</div>
+    <h1 class="font-bebas title">LE COMBAT <span>DES CHEFS</span></h1>
+    @if (currentModule) {
+      <div class="live">● Épreuve : {{ currentModule }}</div>
+    }
+  </header>
+
+  @if (currentModule === 'poignards' && poignards.ranking) {
+    <section class="poignards card">
+      <h2 class="font-bebas">FINALE — Handicaps temps</h2>
+      @for (r of poignards.ranking; track r.rank) {
+        <div class="p-row" [style.borderColor]="r.color">
+          <span class="font-bebas rank">{{ r.rank }}.</span>
+          <span class="name" [style.color]="r.color">{{ r.name }}</span>
+          <span class="handicap">
+            @if (r.handicap_seconds === 0) {
+              Départ immédiat 🏁
+            } @else {
+              +{{ r.handicap_seconds }} s
+            }
+          </span>
+        </div>
+      }
+    </section>
+  }
+
+  <div class="podium">
+    @for (t of podiumOrder(); track $index) {
+      @if (t) {
+        <div class="podium-col" [class]="'p' + ($index === 1 ? 1 : $index === 0 ? 2 : 3)">
+          <div class="pts font-bebas" [style.color]="t.color">{{ t.score_total }}</div>
+          <div class="pname">{{ t.name }}</div>
+          <div class="block font-bebas">{{ medal($index) }}</div>
+        </div>
+      }
+    }
+  </div>
+
+  <table class="score-table card">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Équipe</th>
+        <th>Score</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (t of teams; track t.id; let i = $index) {
+        <tr>
+          <td class="font-bebas rank-cell">{{ i + 1 }}</td>
+          <td>
+            <span class="dot" [style.background]="t.color"></span>
+            {{ t.name }}
+          </td>
+          <td class="font-bebas score-cell" [style.color]="t.color">{{ t.score_total }}</td>
+          <td class="bar-cell">
+            <div class="bar-wrap">
+              <div class="bar" [style.width.%]="(t.score_total / maxScore()) * 100" [style.background]="t.color"></div>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <a routerLink="/" class="home-link">combat-des-chefs.lafrenchsphere.fr</a>
+</div>

@@ -1,0 +1,33 @@
+<div class="page-center">
+  <h1 class="font-bebas title">REJOINDRE</h1>
+  <p class="subtitle">Capitaine ou joueur · Téléphone d'équipe</p>
+
+  <div class="card form-card">
+    <label>Votre prénom</label>
+    <input [(ngModel)]="displayName" placeholder="Marie, capitaine..." />
+
+    <label class="mt">Votre équipe</label>
+    <div class="team-choices">
+      @for (t of teams; track t.id) {
+        <button
+          type="button"
+          class="team-btn"
+          [class.selected]="selectedTeamId === t.id"
+          [style.--tc]="t.color"
+          (click)="selectedTeamId = t.id"
+        >
+          <span class="dot" [style.background]="t.color"></span>
+          {{ t.name }}
+        </button>
+      }
+    </div>
+
+    @if (error) {
+      <p class="error">{{ error }}</p>
+    }
+
+    <button class="btn btn-primary btn-lg w-full" [disabled]="loading" (click)="submit()">
+      {{ loading ? 'Connexion...' : 'Entrer dans la partie' }}
+    </button>
+  </div>
+</div>

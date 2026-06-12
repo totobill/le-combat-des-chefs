@@ -1,0 +1,56 @@
+<div class="page admin">
+  <header class="top">
+    <h1 class="font-bebas">ADMIN</h1>
+    <div class="actions">
+      <a routerLink="/host" class="btn btn-primary">Animateur →</a>
+      <a routerLink="/board" class="btn btn-ghost">Grand écran</a>
+      <button class="btn btn-ghost" (click)="auth.logout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button [class.active]="tab() === 'teams'" (click)="tab.set('teams')">Équipes</button>
+    <button [class.active]="tab() === 'scoring'" (click)="tab.set('scoring')">Barèmes</button>
+    <button [class.active]="tab() === 'links'" (click)="tab.set('links')">Liens</button>
+  </nav>
+
+  @if (tab() === 'teams') {
+    <section>
+      @for (t of teams; track t.id) {
+        <div class="card team-card" [style.borderLeftColor]="t.color">
+          <div class="row">
+            <input [(ngModel)]="t.name" />
+            <input type="color" [(ngModel)]="t.color" class="color" />
+            <input type="number" [(ngModel)]="t.member_count" min="4" max="6" class="num" />
+            <button class="btn btn-primary" (click)="saveTeam(t)">Sauver</button>
+          </div>
+          <div class="score font-bebas" [style.color]="t.color">{{ t.score_total }} pts</div>
+        </div>
+      }
+      <button class="btn btn-danger" (click)="resetScores()">Reset scores</button>
+    </section>
+  }
+
+  @if (tab() === 'scoring') {
+    <section>
+      <p class="hint">Modifiez les points 1er/2e/3e ou barèmes jusqu'au dernier moment.</p>
+      <textarea rows="20" [(ngModel)]="scoringJson"></textarea>
+      <div class="mod-btns">
+        @for (m of modules; track m) {
+          <button class="btn btn-ghost" (click)="saveScoringModule(m)">Sauver {{ m }}</button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (tab() === 'links') {
+    <section class="card">
+      <p><strong>URL publique :</strong> https://combat-des-chefs.lafrenchsphere.fr</p>
+      <p><strong>Rejoindre :</strong> /join</p>
+      <p><strong>Grand écran :</strong> /board</p>
+      <p><strong>Code session :</strong> CHEFS</p>
+      <hr />
+      <p class="hint">QR codes : générez un QR vers /join pour chaque équipe si besoin.</p>
+    </section>
+  }
+</div>

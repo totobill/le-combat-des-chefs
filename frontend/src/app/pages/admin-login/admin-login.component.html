@@ -1,0 +1,16 @@
+<div class="page-center">
+  <h1 class="font-bebas title">ADMIN</h1>
+  <p class="subtitle">Animateur · Configuration</p>
+
+  <div class="card form-card">
+    <label>Mot de passe</label>
+    <input type="password" [(ngModel)]="password" (keyup.enter)="submit()" placeholder="••••••••" />
+
+    @if (error) {
+      <p class="error">{{ error }}</p>
+    }
+
+    <button class="btn btn-primary btn-lg w-full" [disabled]="loading" (click)="submit()">Connexion</button>
+    <a routerLink="/" class="back">← Accueil</a>
+  </div>
+</div>

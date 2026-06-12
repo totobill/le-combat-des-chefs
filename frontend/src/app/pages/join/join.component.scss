@@ -1,0 +1,67 @@
+.title {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.form-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+
+    &.mt {
+      margin-top: 16px;
+    }
+  }
+}
+
+.team-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+
+  &.selected {
+    border-color: var(--tc);
+    background: color-mix(in srgb, var(--tc) 15%, transparent);
+  }
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.w-full {
+  width: 100%;
+  margin-top: 16px;
+}

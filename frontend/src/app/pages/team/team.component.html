@@ -1,0 +1,114 @@
+<div class="page team-page">
+  @if (myTeam) {
+    <header class="header" [style.borderColor]="myTeam.color">
+      <div>
+        <div class="label">Équipe · {{ auth.auth()?.displayName }}</div>
+        <div class="font-bebas name" [style.color]="myTeam.color">{{ myTeam.name }}</div>
+      </div>
+      <div class="font-bebas score" [style.color]="myTeam.color">{{ myTeam.score_total }}</div>
+    </header>
+  }
+
+  @if (!currentModule) {
+    <div class="waiting">
+      <div class="icon">⏳</div>
+      <div class="font-bebas">En attente de l'animateur</div>
+    </div>
+  }
+
+  @if (currentModule === 'dcc') {
+    <section class="card module-card">
+      <span class="badge badge-duo">DCC</span>
+      <h2 class="font-bebas q">{{ dccView['question'] || '...' }}</h2>
+
+      @if (dccView['phase'] === 'choosing' && !dccView['mode']) {
+        <p class="hint">Choisissez votre niveau :</p>
+        <div class="mode-btns">
+          <button class="btn mode duo" (click)="dccChoose('duo')">Duo · 1 pt</button>
+          <button class="btn mode carre" (click)="dccChoose('carre')">Carré · 3 pts</button>
+          <button class="btn mode cash" (click)="dccChoose('cash')">Cash · 6 pts</button>
+        </div>
+      }
+
+      @if (dccView['mode'] && dccView['phase'] === 'answering') {
+        @if (dccView['mode'] === 'cash') {
+          <input [(ngModel)]="cashInput" placeholder="Votre réponse..." />
+          <button class="btn btn-primary btn-lg w-full" (click)="dccSubmitAnswer()">Valider</button>
+        } @else {
+          <div class="opts">
+            @for (opt of dccOpts(); track $index) {
+              <button
+                class="opt-btn"
+                [class.selected]="dccAnswer === $index"
+                (click)="dccAnswer = $index"
+              >
+                {{ opt }}
+              </button>
+            }
+          </div>
+          <button class="btn btn-primary btn-lg w-full" (click)="dccSubmitAnswer()">Valider</button>
+        }
+      }
+
+      @if (dccView['phase'] === 'done' || isDccRevealed()) {
+        <p class="done">Réponse enregistrée — en attente de révélation</p>
+      }
+    </section>
+  }
+
+  @if (currentModule === 'mdp') {
+    <section class="card module-card mdp">
+      @if (mdpView['active'] && mdpView['word']) {
+        <div class="timer font-bebas" [class.warn]="mdpTimer() <= 5">{{ mdpTimer() }}s</div>
+        <div class="word font-bebas">{{ mdpView['word'] }}</div>
+        <p class="hint">Tenez le téléphone au-dessus de votre front</p>
+        <button class="btn btn-success btn-lg w-full tap" (click)="mdpNextWord()">
+          Mot trouvé → suivant ({{ mdpView['words_found'] || 0 }})
+        </button>
+      } @else if (mdpView['active'] === false && mdpTimer() <= 0) {
+        <div class="ended">
+          <div class="font-bebas">Temps écoulé !</div>
+          <p>Mots trouvés : {{ mdpView['words_found'] || 0 }}</p>
+        </div>
+      } @else {
+        <div class="waiting">
+          <p>En attente de votre passage</p>
+        </div>
+      }
+    </section>
+  }
+
+  @if (currentModule === 'paroles') {
+    <section class="card module-card">
+      <h2 class="font-bebas">{{ parolesView['title'] }}</h2>
+      <p class="lyrics">{{ parolesView['display_text'] }}</p>
+      @if (parolesView['phase'] === 'writing' && !parolesLocked()) {
+        <div class="blanks">
+          @for (a of parolesAnswers; track $index) {
+            <input [(ngModel)]="parolesAnswers[$index]" [placeholder]="'Mot ' + ($index + 1)" />
+          }
+        </div>
+        <button class="btn btn-primary btn-lg w-full" (click)="parolesSubmit()">Valider</button>
+      } @else if (parolesLocked()) {
+        <p class="done">Réponse envoyée ✓</p>
+      } @else {
+        <p class="hint">Écoutez la musique...</p>
+      }
+    </section>
+  }
+
+  @if (currentModule === 'chips') {
+    <section class="card module-card">
+      <h2 class="font-bebas">Chips — {{ chipsView['chip_name'] }}</h2>
+      <p class="hint">Dégustez à l'aveugle · {{ chipsView['flavors_to_guess_count'] }} goût(s) à deviner</p>
+      <input [(ngModel)]="chipsGuesses" placeholder="Vos propositions (séparées par virgule)" />
+      <button class="btn btn-primary btn-lg w-full" (click)="chipsSubmit()">Envoyer</button>
+    </section>
+  }
+
+  @if (currentModule === 'molkky' || currentModule === 'piscine' || currentModule === 'poignards') {
+    <div class="waiting">
+      <p>Épreuve en cours — regardez le jeu !</p>
+    </div>
+  }
+</div>

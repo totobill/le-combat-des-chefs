@@ -1,0 +1,164 @@
+<div class="page host">
+  <header class="top">
+    <h1 class="font-bebas">ANIMATEUR</h1>
+    <div class="actions">
+      <a routerLink="/board" class="btn btn-ghost">Grand écran</a>
+      <a routerLink="/admin" class="btn btn-ghost">Admin</a>
+    </div>
+  </header>
+
+  <nav class="mod-nav">
+    @for (m of ['mdp','dcc','chips','molkky','paroles','piscine','poignards']; track m) {
+      <button [class.active]="module() === m" (click)="module.set(m)">{{ m }}</button>
+    }
+  </nav>
+
+  <aside class="scores card">
+    @for (t of teams; track t.id) {
+      <div class="sb-row">
+        <span [style.color]="t.color">{{ t.name }}</span>
+        <span class="font-bebas" [style.color]="t.color">{{ t.score_total }}</span>
+      </div>
+    }
+  </aside>
+
+  <main class="main">
+    @if (module() === 'dcc') {
+      <section class="card">
+        <h2 class="font-bebas">Duo / Carré / Cash</h2>
+        <p class="hint">Les équipes choisissent leur niveau puis répondent sur leur téléphone.</p>
+        <button class="btn btn-primary btn-lg" (click)="dccStart()">Nouvelle question</button>
+        <button class="btn btn-success btn-lg" (click)="dccReveal()">Révéler &amp; scorer</button>
+        @if (dccState()['question']) {
+          <div class="q-display font-bebas">{{ dccState()['question'] }}</div>
+          <p>Phase : {{ dccState()['phase'] }}</p>
+          <pre class="debug">{{ dccState() | json }}</pre>
+        }
+      </section>
+    }
+
+    @if (module() === 'mdp') {
+      <section class="card">
+        <h2 class="font-bebas">Mot de Passe</h2>
+        <p class="hint">30 s par joueur · Le joueur tient le téléphone sur son front.</p>
+        <div class="row">
+          <select [(ngModel)]="mdpTeamId">
+            @for (t of teams; track t.id) {
+              <option [value]="t.id">{{ t.name }}</option>
+            }
+          </select>
+          <input type="number" [(ngModel)]="mdpPlayerIndex" min="0" max="4" />
+          <button class="btn btn-primary" (click)="mdpStartTurn()">Lancer passage</button>
+        </div>
+        @if (mdpState()['current']) {
+          <pre class="debug">{{ mdpState()['current'] | json }}</pre>
+        }
+        <h3>Classement épreuve (1/2/3)</h3>
+        @for (t of teams; track t.id) {
+          <div class="row">
+            <span [style.color]="t.color">{{ t.name }}</span>
+            <select [(ngModel)]="placement[t.id]">
+              <option [ngValue]="1">1er</option>
+              <option [ngValue]="2">2e</option>
+              <option [ngValue]="3">3e</option>
+            </select>
+          </div>
+        }
+        <button class="btn btn-success" (click)="mdpFinalize()">Valider classement MDP</button>
+      </section>
+    }
+
+    @if (module() === 'paroles') {
+      <section class="card">
+        <h2 class="font-bebas">N'oubliez pas les paroles</h2>
+        <button class="btn btn-primary" (click)="parolesStart()">Nouvelle musique</button>
+        <button class="btn btn-ghost" (click)="parolesListen()">Arrêter / 2e écoute</button>
+        <button class="btn btn-success" (click)="parolesScore()">Corriger &amp; scorer</button>
+        @if (parolesState()['title']) {
+          <p class="font-bebas q-display">{{ parolesState()['title'] }}</p>
+          <p>{{ parolesState()['display_text'] }}</p>
+        }
+      </section>
+    }
+
+    @if (module() === 'chips') {
+      <section class="card">
+        <h2 class="font-bebas">Chips</h2>
+        <select [(ngModel)]="selectedChipId">
+          @for (c of chips; track c.id) {
+            <option [value]="c.id">{{ c.name }} — {{ c.flavors.join(', ') }}</option>
+          }
+        </select>
+        <input [(ngModel)]="flavorsToGuess" placeholder="Goûts à faire deviner (séparés par virgule)" />
+        <button class="btn btn-primary" (click)="chipsStart()">Lancer dégustation</button>
+        @for (t of teams; track t.id) {
+          <div class="row chips-score">
+            <span [style.color]="t.color">{{ t.name }}</span>
+            <input #correct placeholder="Goûts trouvés (virgules)" />
+            <input #wrong type="number" placeholder="Malus" value="0" class="num" />
+            <button class="btn btn-success btn-sm" (click)="chipsScoreTeam(t.id, correct.value, +wrong.value)">OK</button>
+          </div>
+        }
+      </section>
+    }
+
+    @if (module() === 'molkky') {
+      <section class="card">
+        <h2 class="font-bebas">Mölkky</h2>
+        <p class="hint">Saisissez le classement en fin de match (pas de saisie équipe).</p>
+        @for (t of teams; track t.id) {
+          <div class="row">
+            <span [style.color]="t.color">{{ t.name }}</span>
+            <select [(ngModel)]="piscinePlacement[t.id]">
+              <option [ngValue]="1">1er</option>
+              <option [ngValue]="2">2e</option>
+              <option [ngValue]="3">3e</option>
+            </select>
+          </div>
+        }
+        <button class="btn btn-success" (click)="molkkyResult()">Valider résultat Mölkky</button>
+      </section>
+    }
+
+    @if (module() === 'piscine') {
+      <section class="card">
+        <h2 class="font-bebas">Piscine — Relais</h2>
+        @for (t of teams; track t.id) {
+          <div class="row">
+            <span [style.color]="t.color">{{ t.name }}</span>
+            <select [(ngModel)]="piscinePlacement[t.id]">
+              <option [ngValue]="1">1er</option>
+              <option [ngValue]="2">2e</option>
+              <option [ngValue]="3">3e</option>
+            </select>
+          </div>
+        }
+        <button class="btn btn-success" (click)="piscineResult()">Valider résultat Piscine</button>
+      </section>
+    }
+
+    @if (module() === 'poignards') {
+      <section class="card">
+        <h2 class="font-bebas">Épreuve des poignards</h2>
+        <button class="btn btn-primary btn-lg" (click)="poignardsStart()">Afficher handicaps temps</button>
+        @if (poignardsState()['ranking']) {
+          <div class="poignards-list">
+            @for (r of $any(poignardsState()['ranking']); track r.team_id) {
+              <div class="poignard-row" [style.borderColor]="r.color">
+                <span class="font-bebas rank">{{ r.rank }}.</span>
+                <span>{{ r.name }}</span>
+                <span class="handicap">
+                  @if (r.handicap_seconds === 0) {
+                    Départ immédiat
+                  } @else {
+                    +{{ r.handicap_seconds }} s de retard
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  </main>
+</div>

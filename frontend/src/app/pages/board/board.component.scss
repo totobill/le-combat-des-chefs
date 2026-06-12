@@ -1,0 +1,171 @@
+.board {
+  min-height: 100vh;
+  padding: 28px 32px;
+}
+
+header {
+  margin-bottom: 24px;
+
+  .label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .title {
+    font-size: clamp(32px, 6vw, 56px);
+    line-height: 1;
+
+    span {
+      color: var(--primary);
+    }
+  }
+
+  .live {
+    color: var(--success);
+    font-size: 14px;
+    margin-top: 8px;
+  }
+}
+
+.podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  .pts {
+    font-size: 20px;
+  }
+
+  .pname {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .block {
+    width: 80px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+  }
+
+  &.p1 .block {
+    height: 120px;
+    background: linear-gradient(180deg, #f59e0b, #d97706);
+  }
+
+  &.p2 .block {
+    height: 90px;
+    background: linear-gradient(180deg, #9ca3af, #6b7280);
+  }
+
+  &.p3 .block {
+    height: 65px;
+    background: linear-gradient(180deg, #cd7c2e, #b45309);
+  }
+}
+
+.score-table {
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  th {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .rank-cell {
+    font-size: 18px;
+  }
+
+  .score-cell {
+    font-size: 22px;
+  }
+
+  .bar-wrap {
+    background: var(--surface3);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 120px;
+  }
+
+  .bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s;
+  }
+}
+
+.poignards {
+  margin-bottom: 24px;
+
+  h2 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .p-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid;
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+
+    .rank {
+      font-size: 28px;
+    }
+
+    .handicap {
+      margin-left: auto;
+      font-size: 16px;
+      color: var(--muted);
+    }
+  }
+}
+
+.home-link {
+  display: block;
+  text-align: center;
+  margin-top: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+}

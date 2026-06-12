@@ -1,0 +1,100 @@
+.admin {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+
+  h1 {
+    font-size: 32px;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+
+  button {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+
+    &.active {
+      background: rgba(91, 94, 245, 0.15);
+      color: #a5a8ff;
+      border-color: rgba(91, 94, 245, 0.4);
+    }
+  }
+}
+
+.team-card {
+  margin-bottom: 12px;
+  border-left: 3px solid;
+
+  .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+
+    input:not(.color):not(.num) {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .color {
+      width: 48px;
+      padding: 4px;
+      height: 40px;
+    }
+
+    .num {
+      width: 70px;
+    }
+  }
+
+  .score {
+    font-size: 28px;
+    margin-top: 8px;
+  }
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+textarea {
+  font-family: monospace;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.mod-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}

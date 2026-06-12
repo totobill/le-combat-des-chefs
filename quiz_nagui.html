@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 Quiz — Tout le monde veut prendre sa place</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d14;
+  --surface: #16161f;
+  --surface2: #1e1e2a;
+  --surface3: #26263a;
+  --border: rgba(255,255,255,0.08);
+  --text: #f0f0f8;
+  --muted: #7878a0;
+  --duo: #3b82f6;
+  --duo-bg: rgba(59,130,246,0.12);
+  --carre: #f59e0b;
+  --carre-bg: rgba(245,158,11,0.12);
+  --cash: #10b981;
+  --cash-bg: rgba(16,185,129,0.12);
+  --danger: #ef4444;
+  --success: #10b981;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* ─── UTILITIES ─── */
+.hidden { display: none !important; }
+.flex { display: flex; } .flex-col { flex-direction: column; } .items-center { align-items: center; } .justify-center { justify-content: center; } .justify-between { justify-content: space-between; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; } .wrap { flex-wrap: wrap; }
+.w-full { width: 100%; }
+.text-center { text-align: center; }
+.font-bebas { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+.text-muted { color: var(--muted); }
+.text-sm { font-size: 13px; } .text-xs { font-size: 11px; }
+
+/* ─── BUTTONS ─── */
+button, .btn { cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; border-radius: var(--radius-sm); padding: 9px 18px; transition: all 0.15s; }
+.btn-primary { background: #5b5ef5; color: #fff; } .btn-primary:hover { background: #4a4de0; transform: translateY(-1px); }
+.btn-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); } .btn-danger:hover { background: rgba(239,68,68,0.25); }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); } .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-success { background: rgba(16,185,129,0.15); color: var(--success); border: 1px solid rgba(16,185,129,0.3); } .btn-success:hover { background: rgba(16,185,129,0.25); }
+.btn-lg { padding: 14px 28px; font-size: 16px; border-radius: var(--radius); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ─── INPUTS ─── */
+input, select, textarea { font-family: 'DM Sans', sans-serif; font-size: 14px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: 9px 12px; width: 100%; transition: border-color 0.15s; outline: none; }
+input:focus, select:focus, textarea:focus { border-color: #5b5ef5; }
+select option { background: var(--surface); }
+label { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: block; }
+
+/* ─── CARD ─── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.card-header { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.05em; margin-bottom: 16px; color: var(--text); }
+
+/* ─── BADGE ─── */
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.badge-duo { background: var(--duo-bg); color: var(--duo); border: 1px solid rgba(59,130,246,0.3); }
+.badge-carre { background: var(--carre-bg); color: var(--carre); border: 1px solid rgba(245,158,11,0.3); }
+.badge-cash { background: var(--cash-bg); color: var(--cash); border: 1px solid rgba(16,185,129,0.3); }
+.badge-cat { background: var(--surface3); color: var(--muted); }
+
+/* ─── SCREENS ─── */
+.screen { min-height: 100vh; display: none; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ══════════════════════════════════════════
+   SCREEN: ACCUEIL
+══════════════════════════════════════════ */
+#screen-home {
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+#screen-home::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(ellipse, rgba(91,94,245,0.15) 0%, transparent 70%);
+  top: -100px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+}
+.home-logo { font-family: 'Bebas Neue', sans-serif; font-size: clamp(36px, 8vw, 72px); letter-spacing: 0.04em; line-height: 1; text-align: center; margin-bottom: 8px; }
+.home-logo span { color: #5b5ef5; }
+.home-sub { color: var(--muted); font-size: 15px; text-align: center; margin-bottom: 40px; }
+.home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; width: 100%; max-width: 700px; margin-bottom: 24px; }
+.home-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 20px; cursor: pointer; transition: all 0.2s; text-align: center; }
+.home-card:hover { border-color: #5b5ef5; transform: translateY(-2px); background: var(--surface2); }
+.home-card .hc-icon { font-size: 32px; margin-bottom: 12px; }
+.home-card .hc-title { font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.04em; margin-bottom: 4px; }
+.home-card .hc-desc { font-size: 12px; color: var(--muted); }
+.home-team-select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; width: 100%; max-width: 700px; }
+.home-team-select h3 { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.04em; margin-bottom: 14px; color: var(--muted); }
+.team-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.team-pill { padding: 8px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.15s; }
+.team-pill:hover, .team-pill.selected { background: #5b5ef5; border-color: #5b5ef5; color: #fff; }
+
+/* ══════════════════════════════════════════
+   SCREEN: ADMIN
+══════════════════════════════════════════ */
+#screen-admin { padding: 0; }
+.admin-layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.admin-sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
+.admin-sidebar-logo { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.05em; padding: 8px 12px 20px; color: var(--muted); border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.sidebar-btn { padding: 10px 14px; border-radius: var(--radius-sm); background: transparent; border: none; color: var(--muted); cursor: pointer; text-align: left; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; transition: all 0.15s; display: flex; align-items: center; gap: 8px; }
+.sidebar-btn:hover { background: var(--surface2); color: var(--text); }
+.sidebar-btn.active { background: rgba(91,94,245,0.15); color: #a5a8ff; }
+.sidebar-btn .sb-icon { width: 18px; text-align: center; }
+.admin-main { padding: 28px; overflow-y: auto; }
+.admin-tab { display: none; } .admin-tab.active { display: block; }
+.admin-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 0.04em; margin-bottom: 6px; }
+.admin-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+.form-grid { display: grid; gap: 12px; } .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 20px 0 10px; font-weight: 600; }
+.q-list-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; transition: border-color 0.15s; }
+.q-list-item:hover { border-color: var(--surface3); }
+.q-list-item .q-text { font-size: 14px; flex: 1; line-height: 1.4; }
+.q-list-item .q-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.q-list-item .q-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 0.04em; }
+.team-config-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+.team-color-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.score-table { width: 100%; border-collapse: collapse; }
+.score-table th, .score-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+.score-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.score-table tr:last-child td { border-bottom: none; }
+.score-table .rank-1 td:first-child { color: #f59e0b; }
+.score-table .rank-2 td:first-child { color: var(--muted); }
+.score-table .rank-3 td:first-child { color: #cd7c2e; }
+.score-bar-wrap { background: var(--surface3); border-radius: 4px; height: 8px; flex: 1; overflow: hidden; }
+.score-bar { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+.q-filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-chip { padding: 5px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; font-size: 12px; color: var(--muted); transition: all 0.15s; }
+.filter-chip.active { background: rgba(91,94,245,0.15); border-color: rgba(91,94,245,0.4); color: #a5a8ff; }
+.opts-preview { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.opt-pill { background: var(--surface3); border-radius: 4px; padding: 2px 8px; font-size: 12px; color: var(--muted); }
+.opt-pill.correct { background: rgba(16,185,129,0.15); color: var(--success); }
+
+/* ══════════════════════════════════════════
+   SCREEN: ANIMATEUR
+══════════════════════════════════════════ */
+#screen-host { padding: 0; flex-direction: column; background: var(--bg); }
+.host-topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.host-topbar-left { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.05em; color: var(--muted); }
+.host-body { display: grid; grid-template-columns: 1fr 300px; flex: 1; overflow: hidden; }
+.host-main { padding: 28px; overflow-y: auto; }
+.host-sidebar { background: var(--surface); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.host-q-display { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; }
+.host-q-text { font-family: 'Bebas Neue', sans-serif; font-size: clamp(22px, 4vw, 36px); letter-spacing: 0.03em; line-height: 1.2; margin-bottom: 20px; }
+.host-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.host-ans { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; font-size: 15px; display: flex; align-items: center; gap: 10px; transition: all 0.3s; }
+.host-ans .ans-letter { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--muted); min-width: 20px; }
+.host-ans.revealed-correct { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); }
+.host-ans.revealed-wrong { opacity: 0.4; }
+.host-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.team-response-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 8px; border: 1px solid var(--border); transition: all 0.3s; }
+.team-response-item.answered { border-color: rgba(91,94,245,0.4); }
+.team-response-item.correct-ans { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.4); }
+.team-response-item.wrong-ans { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+.response-team-name { font-weight: 500; font-size: 13px; }
+.response-value { font-size: 12px; color: var(--muted); }
+.scoreboard-mini { display: flex; flex-direction: column; gap: 8px; }
+.sb-item { display: flex; align-items: center; gap: 10px; }
+.sb-rank { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--muted); min-width: 18px; }
+.sb-name { font-size: 13px; font-weight: 500; flex: 1; }
+.sb-score { font-family: 'Bebas Neue', sans-serif; font-size: 18px; }
+.cash-responses { display: flex; flex-direction: column; gap: 8px; }
+.cash-resp-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; }
+.cash-resp-team { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.cash-resp-val { font-size: 15px; font-weight: 500; }
+.timer-display { font-family: 'Bebas Neue', sans-serif; font-size: 48px; text-align: center; letter-spacing: 0.05em; }
+.timer-display.warning { color: var(--danger); animation: pulse 0.5s infinite alternate; }
+@keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
+
+/* ══════════════════════════════════════════
+   SCREEN: ÉQUIPE
+══════════════════════════════════════════ */
+#screen-team { background: var(--bg); padding: 20px; align-items: stretch; flex-direction: column; }
+.team-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+.team-header-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.04em; }
+.team-header-score { font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+.team-waiting { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; flex: 1; padding: 40px 20px; text-align: center; }
+.team-waiting-icon { font-size: 48px; opacity: 0.3; }
+.team-q-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+.team-q-type { margin-bottom: 14px; }
+.team-q-text { font-family: 'Bebas Neue', sans-serif; font-size: clamp(20px, 5vw, 30px); letter-spacing: 0.03em; line-height: 1.2; margin-bottom: 20px; }
+.team-answers { display: grid; gap: 10px; }
+.team-ans-btn { padding: 16px 18px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 12px; transition: all 0.2s; font-weight: 500; }
+.team-ans-btn:hover:not(:disabled) { border-color: #5b5ef5; background: rgba(91,94,245,0.1); }
+.team-ans-btn.selected { border-color: #5b5ef5; background: rgba(91,94,245,0.15); }
+.team-ans-btn.correct { border-color: var(--success); background: rgba(16,185,129,0.15); }
+.team-ans-btn.wrong { border-color: var(--danger); background: rgba(239,68,68,0.1); opacity: 0.7; }
+.team-ans-btn:disabled { cursor: default; }
+.team-ans-letter { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--muted); min-width: 20px; }
+.team-cash-area { display: flex; flex-direction: column; gap: 10px; }
+.team-cash-hint { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--muted); }
+.team-result-banner { border-radius: var(--radius); padding: 16px 20px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 0.04em; margin-bottom: 12px; }
+.team-result-banner.correct { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--success); }
+.team-result-banner.wrong { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
+.team-result-banner.pending { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+
+/* ══════════════════════════════════════════
+   SCREEN: TABLEAU DE BORD
+══════════════════════════════════════════ */
+#screen-board { padding: 0; background: var(--bg); flex-direction: column; }
+.board-header { padding: 28px 32px 0; display: flex; align-items: flex-end; justify-content: space-between; }
+.board-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(32px, 6vw, 56px); letter-spacing: 0.04em; }
+.board-title span { color: #5b5ef5; }
+.board-body { padding: 24px 32px; display: flex; flex-direction: column; gap: 20px; flex: 1; }
+.podium-wrap { display: flex; align-items: flex-end; justify-content: center; gap: 16px; margin-bottom: 8px; }
+.podium-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.podium-score { font-family: 'Bebas Neue', sans-serif; font-size: 20px; }
+.podium-name { font-size: 13px; font-weight: 500; }
+.podium-block { width: 80px; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+.podium-1 .podium-block { height: 120px; background: linear-gradient(180deg, #f59e0b, #d97706); color: #fff; }
+.podium-2 .podium-block { height: 90px; background: linear-gradient(180deg, #9ca3af, #6b7280); color: #fff; }
+.podium-3 .podium-block { height: 65px; background: linear-gradient(180deg, #cd7c2e, #b45309); color: #fff; }
+.full-score-table { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.history-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.history-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.history-q { font-size: 13px; flex: 1; }
+.history-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.history-winner { font-size: 12px; color: var(--success); font-weight: 500; }
+
+/* ─── NOTIFICATION ─── */
+.notif { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; font-size: 14px; z-index: 9999; transform: translateY(20px); opacity: 0; transition: all 0.3s; pointer-events: none; max-width: 300px; }
+.notif.show { transform: translateY(0); opacity: 1; }
+.notif.success { border-left: 3px solid var(--success); }
+.notif.error { border-left: 3px solid var(--danger); }
+.notif.info { border-left: 3px solid #5b5ef5; }
+
+/* ─── MODAL ─── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; width: 100%; max-width: 560px; max-height: 80vh; overflow-y: auto; transform: scale(0.95); transition: transform 0.2s; }
+.modal-overlay.open .modal { transform: scale(1); }
+.modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.04em; margin-bottom: 20px; }
+.opts-inputs { display: grid; gap: 8px; }
+.opt-input-row { display: flex; gap: 8px; align-items: center; }
+.opt-letter { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--muted); min-width: 20px; }
+.opt-correct-btn { padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.15s; }
+.opt-correct-btn.active { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: var(--success); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-sidebar { display: flex; flex-direction: row; overflow-x: auto; padding: 10px; gap: 4px; border-right: none; border-bottom: 1px solid var(--border); }
+  .admin-sidebar-logo { display: none; }
+  .host-body { grid-template-columns: 1fr; }
+  .host-sidebar { border-left: none; border-top: 1px solid var(--border); }
+  .host-answers { grid-template-columns: 1fr; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .board-header { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .board-body { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<!-- MODAL: Ajouter/Modifier question -->
+<div class="modal-overlay" id="modal-question">
+  <div class="modal">
+    <div class="modal-title" id="modal-q-title">Nouvelle question</div>
+    <div class="form-grid">
+      <div>
+        <label>Question</label>
+        <textarea id="mq-text" rows="3" placeholder="Entrez la question..."></textarea>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Type</label>
+          <select id="mq-type" onchange="updateModalType()">
+            <option value="duo">Duo (2 choix)</option>
+            <option value="carre">Carré (4 choix)</option>
+            <option value="cash">Cash (réponse libre)</option>
+          </select>
+        </div>
+        <div>
+          <label>Catégorie</label>
+          <select id="mq-cat">
+            <option>Culture générale</option><option>Sport</option><option>Géographie</option>
+            <option>Histoire</option><option>Politique</option><option>Français</option>
+            <option>Informatique</option><option>Cyber / Wi-Fi</option>
+          </select>
+        </div>
+      </div>
+      <div id="mq-opts-section">
+        <label>Réponses</label>
+        <div class="opts-inputs" id="mq-opts-inputs"></div>
+      </div>
+      <div id="mq-cash-section" class="hidden">
+        <label>Réponse correcte</label>
+        <input type="text" id="mq-cash-ans" placeholder="La bonne réponse...">
+        <label style="margin-top:10px">Indice (optionnel)</label>
+        <input type="text" id="mq-hint" placeholder="Indice pour les équipes...">
+      </div>
+    </div>
+    <div class="flex gap-2" style="margin-top:20px;justify-content:flex-end">
+      <button class="btn-ghost" onclick="closeModal('modal-question')">Annuler</button>
+      <button class="btn-primary" onclick="saveQuestion()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Config équipes -->
+<div class="modal-overlay" id="modal-teams">
+  <div class="modal">
+    <div class="modal-title">Configuration des équipes</div>
+    <div>
+      <label>Nombre d'équipes</label>
+      <div class="flex gap-2" style="margin-bottom:16px">
+        <select id="team-count-sel" onchange="updateTeamCountPreview()">
+          <option value="2">2 équipes</option>
+          <option value="3" selected>3 équipes</option>
+          <option value="4">4 équipes</option>
+          <option value="5">5 équipes</option>
+          <option value="6">6 équipes</option>
+        </select>
+      </div>
+      <div id="team-name-inputs" class="form-grid"></div>
+    </div>
+    <div class="flex gap-2" style="margin-top:20px;justify-content:flex-end">
+      <button class="btn-ghost" onclick="closeModal('modal-teams')">Annuler</button>
+      <button class="btn-primary" onclick="saveTeams()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: ACCUEIL -->
+<div class="screen active" id="screen-home">
+  <div class="home-logo">TOUT LE MONDE<br>VEUT <span>PRENDRE SA PLACE</span></div>
+  <div class="home-sub">Quiz d'entreprise · Duo · Carré · Cash</div>
+  <div class="home-cards">
+    <div class="home-card" onclick="goAdmin()">
+      <div class="hc-icon">⚙️</div>
+      <div class="hc-title">Admin</div>
+      <div class="hc-desc">Gérer questions, équipes et scores</div>
+    </div>
+    <div class="home-card" onclick="goHost()">
+      <div class="hc-icon">🎙️</div>
+      <div class="hc-title">Animateur</div>
+      <div class="hc-desc">Poser les questions et révéler les réponses</div>
+    </div>
+    <div class="home-card" onclick="goBoard()">
+      <div class="hc-icon">🏆</div>
+      <div class="hc-title">Tableau de bord</div>
+      <div class="hc-desc">Scores en temps réel sur grand écran</div>
+    </div>
+  </div>
+  <div class="home-team-select">
+    <h3>Rejoindre en tant qu'équipe</h3>
+    <div class="team-pills" id="home-team-pills"></div>
+  </div>
+</div>
+
+<!-- SCREEN: ADMIN -->
+<div class="screen" id="screen-admin">
+  <div class="admin-layout">
+    <div class="admin-sidebar">
+      <div class="admin-sidebar-logo">⚙ ADMIN</div>
+      <button class="sidebar-btn active" onclick="adminTab('questions',this)"><span class="sb-icon">📋</span> Questions</button>
+      <button class="sidebar-btn" onclick="adminTab('teams',this)"><span class="sb-icon">👥</span> Équipes</button>
+      <button class="sidebar-btn" onclick="adminTab('scores',this)"><span class="sb-icon">📊</span> Scores</button>
+      <button class="sidebar-btn" onclick="adminTab('history',this)"><span class="sb-icon">📜</span> Historique</button>
+      <div style="flex:1"></div>
+      <button class="sidebar-btn" onclick="resetGame()"><span class="sb-icon">🔄</span> Reset partie</button>
+      <button class="sidebar-btn" onclick="goScreen('screen-home')"><span class="sb-icon">🏠</span> Accueil</button>
+    </div>
+    <div class="admin-main">
+
+      <!-- TAB: QUESTIONS -->
+      <div class="admin-tab active" id="tab-questions">
+        <div class="admin-title">Questions</div>
+        <div class="admin-subtitle">Gérer la banque de questions du quiz</div>
+        <div class="stats-grid" id="q-stats"></div>
+        <div class="flex justify-between items-center" style="margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div class="q-filter-row" id="q-filter-row" style="margin-bottom:0"></div>
+          <button class="btn-primary" onclick="openAddQuestion()">+ Nouvelle question</button>
+        </div>
+        <div id="q-list" class="flex flex-col gap-2"></div>
+      </div>
+
+      <!-- TAB: EQUIPES -->
+      <div class="admin-tab" id="tab-teams">
+        <div class="admin-title">Équipes</div>
+        <div class="admin-subtitle">Configurer les équipes pour la partie</div>
+        <button class="btn-primary" style="margin-bottom:20px" onclick="openModal('modal-teams');renderTeamModal()">Configurer les équipes</button>
+        <div id="team-list" class="flex flex-col gap-2"></div>
+      </div>
+
+      <!-- TAB: SCORES -->
+      <div class="admin-tab" id="tab-scores">
+        <div class="admin-title">Scores</div>
+        <div class="admin-subtitle">Ajuster manuellement les scores</div>
+        <div id="admin-scores-list" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- TAB: HISTORIQUE -->
+      <div class="admin-tab" id="tab-history">
+        <div class="admin-title">Historique</div>
+        <div class="admin-subtitle">Questions posées lors de cette session</div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: ANIMATEUR -->
+<div class="screen" id="screen-host">
+  <div class="host-topbar">
+    <div class="host-topbar-left">🎙 ANIMATEUR</div>
+    <div class="flex gap-2 items-center">
+      <select id="host-cat" style="width:180px;font-size:13px;padding:6px 10px">
+        <option value="">Toutes catégories</option>
+        <option>Culture générale</option><option>Sport</option><option>Géographie</option>
+        <option>Histoire</option><option>Politique</option><option>Français</option>
+        <option>Informatique</option><option>Cyber / Wi-Fi</option>
+      </select>
+      <select id="host-type" style="width:130px;font-size:13px;padding:6px 10px">
+        <option value="">Tous types</option>
+        <option value="duo">Duo</option>
+        <option value="carre">Carré</option>
+        <option value="cash">Cash</option>
+      </select>
+      <button class="btn-primary" onclick="drawQuestion()">Nouvelle question ↗</button>
+      <button class="btn-ghost" onclick="goScreen('screen-home')">Accueil</button>
+    </div>
+  </div>
+  <div class="host-body">
+    <div class="host-main">
+      <div id="host-q-area">
+        <div style="color:var(--muted);text-align:center;padding:60px 20px;font-size:15px;">Cliquez sur "Nouvelle question" pour commencer</div>
+      </div>
+    </div>
+    <div class="host-sidebar">
+      <div>
+        <div class="section-label">Réponses équipes</div>
+        <div id="host-responses"></div>
+      </div>
+      <div>
+        <div class="section-label">Scores</div>
+        <div class="scoreboard-mini" id="host-scores"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: ÉQUIPE -->
+<div class="screen" id="screen-team">
+  <div class="team-header">
+    <div>
+      <div class="text-sm text-muted" id="team-label">Mon équipe</div>
+      <div class="team-header-name" id="team-display-name">—</div>
+    </div>
+    <div>
+      <div class="text-sm text-muted" style="text-align:right">Score</div>
+      <div class="team-header-score" id="team-display-score">0</div>
+    </div>
+  </div>
+  <div id="team-content">
+    <div class="team-waiting">
+      <div class="team-waiting-icon">⏳</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.04em;color:var(--muted)">En attente de l'animateur</div>
+      <div class="text-sm text-muted">La prochaine question apparaîtra ici</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: TABLEAU DE BORD -->
+<div class="screen" id="screen-board">
+  <div class="board-header">
+    <div>
+      <div class="text-sm text-muted" style="margin-bottom:4px">CLASSEMENT EN DIRECT</div>
+      <div class="board-title">TOUT LE MONDE<br>VEUT <span>PRENDRE SA PLACE</span></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn-ghost btn-sm" onclick="renderBoard()">↺ Actualiser</button>
+      <button class="btn-ghost btn-sm" onclick="goScreen('screen-home')">Accueil</button>
+    </div>
+  </div>
+  <div class="board-body">
+    <div id="board-podium"></div>
+    <div class="full-score-table">
+      <table class="score-table" id="board-table">
+        <thead><tr><th>#</th><th>Équipe</th><th>Score</th><th style="width:200px">Progression</th></tr></thead>
+        <tbody id="board-tbody"></tbody>
+      </table>
+    </div>
+    <div>
+      <div class="section-label" style="margin-top:0">Dernières questions</div>
+      <div class="history-list" id="board-history"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const TEAM_COLORS = ['#5b5ef5','#f59e0b','#10b981','#ef4444','#ec4899','#8b5cf6'];
+const CATS = ['Culture générale','Sport','Géographie','Histoire','Politique','Français','Informatique','Cyber / Wi-Fi'];
+
+let state = loadState();
+let editingQIdx = null;
+let activeTeamIdx = null;
+let bc = null;
+
+function defaultState() {
+  return {
+    teams: [
+      {name:'Équipe A',score:0,color:TEAM_COLORS[0]},
+      {name:'Équipe B',score:0,color:TEAM_COLORS[1]},
+      {name:'Équipe C',score:0,color:TEAM_COLORS[2]},
+    ],
+    questions: getDefaultQuestions(),
+    currentQuestion: null,
+    teamResponses: {},
+    revealed: false,
+    history: [],
+    usedIds: [],
+  };
+}
+
+function loadState() {
+  try { const s = localStorage.getItem('quiz_state'); return s ? JSON.parse(s) : defaultState(); } catch(e) { return defaultState(); }
+}
+function saveState() {
+  localStorage.setItem('quiz_state', JSON.stringify(state));
+  broadcast({type:'state_update', state});
+}
+
+// ── BROADCAST CHANNEL (sync entre onglets) ──
+function initBroadcast() {
+  try {
+    bc = new BroadcastChannel('quiz_nagui');
+    bc.onmessage = (e) => {
+      if(e.data.type === 'state_update') {
+        state = e.data.state;
+        refreshCurrentScreen();
+      }
+    };
+  } catch(ex) {}
+}
+function broadcast(msg) { try { if(bc) bc.postMessage(msg); } catch(e) {} }
+
+function refreshCurrentScreen() {
+  const active = document.querySelector('.screen.active');
+  if(!active) return;
+  const id = active.id;
+  if(id==='screen-host') renderHostScores(), renderHostResponses();
+  if(id==='screen-team' && activeTeamIdx !== null) renderTeamContent();
+  if(id==='screen-board') renderBoard();
+  if(id==='screen-admin') renderAdminScores();
+  // update team score in header
+  if(id==='screen-team' && activeTeamIdx!==null) {
+    const t = state.teams[activeTeamIdx];
+    if(t) document.getElementById('team-display-score').textContent = t.score;
+  }
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goAdmin() { goScreen('screen-admin'); renderAdmin(); }
+function goHost() { goScreen('screen-host'); renderHostScores(); renderHostResponses(); }
+function goBoard() { goScreen('screen-board'); renderBoard(); setInterval(renderBoard, 3000); }
+function goTeam(idx) {
+  activeTeamIdx = idx;
+  const t = state.teams[idx];
+  document.getElementById('team-display-name').textContent = t.name;
+  document.getElementById('team-display-score').textContent = t.score;
+  document.getElementById('team-display-name').style.color = t.color;
+  document.getElementById('team-header-score').style.color = t.color;
+  goScreen('screen-team');
+  renderTeamContent();
+}
+
+// ══════════════════════════════════════════
+// HOME
+// ══════════════════════════════════════════
+function renderHome() {
+  const el = document.getElementById('home-team-pills');
+  el.innerHTML = state.teams.map((t,i)=>`
+    <div class="team-pill" onclick="goTeam(${i})" style="--tc:${t.color}">
+      <span style="width:8px;height:8px;border-radius:50%;background:${t.color};display:inline-block;margin-right:6px"></span>
+      ${t.name}
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════
+function adminTab(name, btn) {
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='questions') renderQuestions();
+  if(name==='teams') renderTeamList();
+  if(name==='scores') renderAdminScores();
+  if(name==='history') renderHistory();
+}
+function renderAdmin() { renderQuestions(); renderTeamList(); renderAdminScores(); }
+
+// ─ QUESTIONS ─
+let qFilterType='', qFilterCat='';
+function renderQuestions() {
+  // stats
+  const types = ['duo','carre','cash'];
+  const typeLabels = {duo:'Duo',carre:'Carré',cash:'Cash'};
+  document.getElementById('q-stats').innerHTML = [
+    {label:'Total', val: state.questions.length, col:'#5b5ef5'},
+    ...types.map(t=>({label:typeLabels[t], val: state.questions.filter(q=>q.type===t).length, col: t==='duo'?'#3b82f6':t==='carre'?'#f59e0b':'#10b981'}))
+  ].map(s=>`<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-value" style="color:${s.col}">${s.val}</div></div>`).join('');
+
+  // filters
+  const filterRow = document.getElementById('q-filter-row');
+  filterRow.innerHTML = `<div class="filter-chip ${qFilterType===''?'active':''}" onclick="setQFilter('','')">Tout</div>`
+    + types.map(t=>`<div class="filter-chip ${qFilterType===t?'active':''}" onclick="setQFilter('${t}','')">${typeLabels[t]}</div>`).join('')
+    + CATS.map(c=>`<div class="filter-chip ${qFilterCat===c?'active':''}" onclick="setQFilter('','${c}')">${c}</div>`).join('');
+
+  // list
+  const filtered = state.questions.filter(q=>
+    (qFilterType===''||q.type===qFilterType) && (qFilterCat===''||q.cat===qFilterCat)
+  );
+  document.getElementById('q-list').innerHTML = filtered.length === 0
+    ? '<div style="color:var(--muted);text-align:center;padding:32px">Aucune question</div>'
+    : filtered.map((q,i)=>{
+        const realIdx = state.questions.indexOf(q);
+        const typeClass = q.type==='duo'?'badge-duo':q.type==='carre'?'badge-carre':'badge-cash';
+        const typeLabel = q.type==='duo'?'Duo':q.type==='carre'?'Carré':'Cash';
+        let optsHtml = '';
+        if(q.type!=='cash') {
+          optsHtml = `<div class="opts-preview">${q.opts.map((o,oi)=>`<span class="opt-pill ${oi===q.ans?'correct':''}">${String.fromCharCode(65+oi)}. ${o}</span>`).join('')}</div>`;
+        } else {
+          optsHtml = `<div style="font-size:12px;color:var(--success);margin-top:4px">✓ ${q.ans}${q.hint?` · Indice: ${q.hint}`:''}</div>`;
+        }
+        return `<div class="q-list-item">
+          <div style="flex:1">
+            <div class="q-text">${q.q}</div>
+            <div class="q-meta"><span class="badge ${typeClass}">${typeLabel}</span><span class="badge badge-cat">${q.cat}</span></div>
+            ${optsHtml}
+          </div>
+          <div class="q-actions">
+            <button class="btn-ghost btn-sm" onclick="openEditQuestion(${realIdx})">✏️</button>
+            <button class="btn-danger btn-sm" onclick="deleteQuestion(${realIdx})">🗑</button>
+          </div>
+        </div>`;
+      }).join('');
+}
+function setQFilter(type, cat) { qFilterType=type; qFilterCat=cat; renderQuestions(); }
+function deleteQuestion(idx) {
+  if(!confirm('Supprimer cette question ?')) return;
+  state.questions.splice(idx, 1);
+  saveState(); renderQuestions(); showNotif('Question supprimée', 'info');
+}
+
+// ─ MODAL QUESTION ─
+function openAddQuestion() { editingQIdx=null; resetModal(); openModal('modal-question'); document.getElementById('modal-q-title').textContent='Nouvelle question'; }
+function openEditQuestion(idx) {
+  editingQIdx=idx; const q=state.questions[idx];
+  document.getElementById('modal-q-title').textContent='Modifier la question';
+  document.getElementById('mq-text').value=q.q;
+  document.getElementById('mq-type').value=q.type;
+  document.getElementById('mq-cat').value=q.cat;
+  updateModalType();
+  if(q.type!=='cash') {
+    q.opts.forEach((o,i)=>{ const inp=document.getElementById('mq-opt-'+i); if(inp) inp.value=o; });
+    document.querySelectorAll('.opt-correct-btn').forEach((b,i)=>b.classList.toggle('active',i===q.ans));
+  } else {
+    document.getElementById('mq-cash-ans').value=q.ans||'';
+    document.getElementById('mq-hint').value=q.hint||'';
+  }
+  openModal('modal-question');
+}
+function resetModal() {
+  document.getElementById('mq-text').value=''; document.getElementById('mq-type').value='duo'; document.getElementById('mq-cat').value='Culture générale';
+  document.getElementById('mq-cash-ans').value=''; document.getElementById('mq-hint').value='';
+  updateModalType();
+}
+let correctOptIdx=0;
+function updateModalType() {
+  const type=document.getElementById('mq-type').value;
+  const isDuo=type==='duo', isCash=type==='cash';
+  document.getElementById('mq-opts-section').classList.toggle('hidden',isCash);
+  document.getElementById('mq-cash-section').classList.toggle('hidden',!isCash);
+  if(!isCash) {
+    const count=isDuo?2:4;
+    document.getElementById('mq-opts-inputs').innerHTML = Array.from({length:count},(_,i)=>`
+      <div class="opt-input-row">
+        <span class="opt-letter">${String.fromCharCode(65+i)}</span>
+        <input type="text" id="mq-opt-${i}" placeholder="Réponse ${String.fromCharCode(65+i)}...">
+        <button class="opt-correct-btn ${i===0?'active':''}" onclick="setCorrectOpt(${i})" type="button">✓ Correct</button>
+      </div>`).join('');
+    correctOptIdx=0;
+  }
+}
+function setCorrectOpt(i) { correctOptIdx=i; document.querySelectorAll('.opt-correct-btn').forEach((b,j)=>b.classList.toggle('active',j===i)); }
+function saveQuestion() {
+  const text=document.getElementById('mq-text').value.trim();
+  if(!text) { showNotif('Entrez le texte de la question','error'); return; }
+  const type=document.getElementById('mq-type').value;
+  const cat=document.getElementById('mq-cat').value;
+  let q = {q:text, type, cat};
+  if(type!=='cash') {
+    const count=type==='duo'?2:4;
+    const opts=Array.from({length:count},(_,i)=>document.getElementById('mq-opt-'+i)?.value.trim()||'');
+    if(opts.some(o=>!o)) { showNotif('Remplissez toutes les réponses','error'); return; }
+    q.opts=opts; q.ans=correctOptIdx;
+  } else {
+    const ans=document.getElementById('mq-cash-ans').value.trim();
+    if(!ans) { showNotif('Entrez la réponse correcte','error'); return; }
+    q.ans=ans; q.hint=document.getElementById('mq-hint').value.trim();
+  }
+  if(editingQIdx!==null) state.questions[editingQIdx]=q;
+  else state.questions.push(q);
+  saveState(); closeModal('modal-question'); renderQuestions();
+  showNotif(editingQIdx!==null?'Question modifiée':'Question ajoutée','success');
+}
+
+// ─ ÉQUIPES ─
+function renderTeamList() {
+  document.getElementById('team-list').innerHTML = state.teams.map((t,i)=>`
+    <div class="team-config-row">
+      <div class="team-color-dot" style="background:${t.color}"></div>
+      <div style="flex:1;font-weight:500">${t.name}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${t.color}">${t.score} pts</div>
+    </div>`).join('');
+}
+function renderTeamModal() {
+  document.getElementById('team-count-sel').value = state.teams.length;
+  updateTeamCountPreview();
+}
+function updateTeamCountPreview() {
+  const count=parseInt(document.getElementById('team-count-sel').value);
+  document.getElementById('team-name-inputs').innerHTML = Array.from({length:count},(_,i)=>`
+    <div class="flex items-center gap-2">
+      <div class="team-color-dot" style="background:${TEAM_COLORS[i]||'#888'}"></div>
+      <input type="text" id="tname-${i}" value="${state.teams[i]?.name||'Équipe '+(i+1)}" placeholder="Nom équipe ${i+1}">
+    </div>`).join('');
+}
+function saveTeams() {
+  const count=parseInt(document.getElementById('team-count-sel').value);
+  const newTeams=Array.from({length:count},(_,i)=>({
+    name:document.getElementById('tname-'+i)?.value.trim()||'Équipe '+(i+1),
+    score:state.teams[i]?.score||0,
+    color:TEAM_COLORS[i]||'#888'
+  }));
+  state.teams=newTeams; saveState();
+  closeModal('modal-teams'); renderTeamList(); renderHome();
+  showNotif('Équipes enregistrées','success');
+}
+
+// ─ SCORES ADMIN ─
+function renderAdminScores() {
+  document.getElementById('admin-scores-list').innerHTML = state.teams.map((t,i)=>`
+    <div class="card" style="border-left:3px solid ${t.color}">
+      <div class="flex items-center justify-between gap-3" style="margin-bottom:12px">
+        <div class="flex items-center gap-2">
+          <div class="team-color-dot" style="background:${t.color}"></div>
+          <span style="font-weight:500">${t.name}</span>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:${t.color}">${t.score}</div>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn-ghost btn-sm" onclick="adjustScore(${i},-1)">−1</button>
+        <button class="btn-ghost btn-sm" onclick="adjustScore(${i},-3)">−3</button>
+        <button class="btn-ghost btn-sm" onclick="adjustScore(${i},-5)">−5</button>
+        <button class="btn-success btn-sm" onclick="adjustScore(${i},1)">+1</button>
+        <button class="btn-success btn-sm" onclick="adjustScore(${i},3)">+3</button>
+        <button class="btn-success btn-sm" onclick="adjustScore(${i},5)">+5</button>
+        <button class="btn-danger btn-sm" style="margin-left:auto" onclick="resetScore(${i})">Reset</button>
+      </div>
+    </div>`).join('');
+}
+function adjustScore(teamIdx, delta) {
+  state.teams[teamIdx].score = Math.max(0, (state.teams[teamIdx].score||0)+delta);
+  saveState(); renderAdminScores(); renderHostScores(); renderBoard();
+}
+function resetScore(teamIdx) { state.teams[teamIdx].score=0; saveState(); renderAdminScores(); }
+
+// ─ HISTORIQUE ─
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if(!state.history||!state.history.length) { el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">Aucune question posée</div>'; return; }
+  el.innerHTML = [...state.history].reverse().map(h=>`
+    <div class="history-item">
+      <div>
+        <div class="history-q">${h.q}</div>
+        ${h.winners&&h.winners.length?`<div class="history-winner">✓ ${h.winners.join(', ')}</div>`:'<div style="font-size:12px;color:var(--muted)">Aucun gagnant</div>'}
+      </div>
+      <div class="history-meta">
+        <span class="badge ${h.type==='duo'?'badge-duo':h.type==='carre'?'badge-carre':'badge-cash'}">${h.type==='duo'?'Duo':h.type==='carre'?'Carré':'Cash'}</span>
+        <span class="badge badge-cat">${h.cat}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// ANIMATEUR
+// ══════════════════════════════════════════
+function drawQuestion() {
+  const cat=document.getElementById('host-cat').value;
+  const type=document.getElementById('host-type').value;
+  let pool=state.questions.filter(q=>
+    (cat===''||q.cat===cat)&&(type===''||q.type===type)&&!state.usedIds.includes(state.questions.indexOf(q))
+  );
+  if(!pool.length) {
+    state.usedIds=[]; saveState();
+    pool=state.questions.filter(q=>(cat===''||q.cat===cat)&&(type===''||q.type===type));
+    showNotif('Pool épuisé, réinitialisation','info');
+  }
+  if(!pool.length) { showNotif('Aucune question disponible','error'); return; }
+  const q=pool[Math.floor(Math.random()*pool.length)];
+  state.currentQuestion=q; state.teamResponses={}; state.revealed=false;
+  state.usedIds.push(state.questions.indexOf(q));
+  saveState();
+  renderHostQuestion(); renderHostResponses();
+}
+
+function renderHostQuestion() {
+  const q=state.currentQuestion;
+  if(!q) return;
+  const typeLabel=q.type==='duo'?'Duo':q.type==='carre'?'Carré':'Cash';
+  const typeBadge=`<span class="badge ${q.type==='duo'?'badge-duo':q.type==='carre'?'badge-carre':'badge-cash'}">${typeLabel}</span>`;
+  const pts=q.type==='duo'?1:q.type==='carre'?3:5;
+  let answersHtml='';
+  if(q.type!=='cash') {
+    answersHtml=`<div class="host-answers">${q.opts.map((o,i)=>`
+      <div class="host-ans" id="host-ans-${i}">
+        <span class="ans-letter">${String.fromCharCode(65+i)}</span>${o}
+      </div>`).join('')}</div>`;
+  } else {
+    answersHtml=`<div style="background:var(--surface2);border-radius:var(--radius-sm);padding:14px;color:var(--muted);font-size:14px">
+      ${q.hint?`<div>💡 Indice : <strong style="color:var(--text)">${q.hint}</strong></div>`:'<div>Réponse libre</div>'}
+      <div id="host-cash-reveal" style="margin-top:8px"></div>
+    </div>`;
+  }
+  document.getElementById('host-q-area').innerHTML=`
+    <div class="host-q-display">
+      <div class="flex gap-2 items-center" style="margin-bottom:14px">
+        ${typeBadge}<span class="badge badge-cat">${q.cat}</span>
+        <span class="badge" style="background:rgba(91,94,245,0.1);color:#a5a8ff;margin-left:auto">${pts} pt${pts>1?'s':''}</span>
+      </div>
+      <div class="host-q-text">${q.q}</div>
+      ${answersHtml}
+    </div>
+    <div class="host-controls">
+      ${q.type!=='cash'
+        ?`<button class="btn-primary btn-lg" onclick="revealAnswer()">Révéler la réponse</button>`
+        :`<button class="btn-primary btn-lg" onclick="revealCashAnswer()">Révéler la réponse</button>`}
+      <button class="btn-success btn-lg" onclick="givePoints()">Attribuer les points ✓</button>
+      <button class="btn-ghost" onclick="drawQuestion()">Passer →</button>
+    </div>`;
+}
+
+function revealAnswer() {
+  const q=state.currentQuestion;
+  if(!q||q.type==='cash') return;
+  state.revealed=true;
+  q.opts.forEach((_,i)=>{
+    const el=document.getElementById('host-ans-'+i);
+    if(!el) return;
+    el.classList.add(i===q.ans?'revealed-correct':'revealed-wrong');
+  });
+  saveState(); renderHostResponses();
+}
+
+function revealCashAnswer() {
+  const q=state.currentQuestion;
+  if(!q) return;
+  state.revealed=true;
+  const el=document.getElementById('host-cash-reveal');
+  if(el) el.innerHTML=`<div style="color:var(--success);font-weight:500;font-size:16px">✓ Réponse : ${q.ans}</div>`;
+  saveState(); renderHostResponses();
+}
+
+function givePoints() {
+  const q=state.currentQuestion;
+  if(!q) { showNotif('Aucune question active','error'); return; }
+  const pts=q.type==='duo'?1:q.type==='carre'?3:5;
+  let winners=[];
+  if(q.type!=='cash') {
+    state.teams.forEach((t,i)=>{
+      const resp=state.teamResponses[i];
+      if(resp!==undefined && resp===q.ans) { state.teams[i].score+=pts; winners.push(t.name); }
+    });
+  } else {
+    // Cash: animateur doit valider manuellement, on donne les points aux équipes marquées correctes
+    state.teams.forEach((t,i)=>{
+      if(state.teamResponses['correct_'+i]) { state.teams[i].score+=pts; winners.push(t.name); }
+    });
+  }
+  state.history.push({q:q.q, type:q.type, cat:q.cat, winners});
+  saveState(); renderHostScores(); renderHostResponses();
+  showNotif(winners.length?`+${pts} pts pour : ${winners.join(', ')}`:'Aucun point attribué', winners.length?'success':'info');
+}
+
+function renderHostScores() {
+  const sorted=[...state.teams].sort((a,b)=>b.score-a.score);
+  document.getElementById('host-scores').innerHTML=sorted.map((t,i)=>`
+    <div class="sb-item">
+      <span class="sb-rank">${i+1}</span>
+      <div class="score-bar-wrap"><div class="score-bar" style="width:${sorted[0].score?Math.round(t.score/sorted[0].score*100):0}%;background:${t.color}"></div></div>
+      <span class="sb-name">${t.name}</span>
+      <span class="sb-score" style="color:${t.color}">${t.score}</span>
+    </div>`).join('');
+}
+
+function renderHostResponses() {
+  const q=state.currentQuestion;
+  const el=document.getElementById('host-responses');
+  if(!q) { el.innerHTML='<div style="color:var(--muted);font-size:13px">En attente d\'une question</div>'; return; }
+  if(q.type!=='cash') {
+    el.innerHTML=state.teams.map((t,i)=>{
+      const resp=state.teamResponses[i];
+      const hasResp=resp!==undefined;
+      const isCorrect=hasResp&&resp===q.ans&&state.revealed;
+      const isWrong=hasResp&&resp!==q.ans&&state.revealed;
+      return `<div class="team-response-item ${hasResp?'answered':''} ${isCorrect?'correct-ans':''} ${isWrong?'wrong-ans':''}">
+        <div>
+          <div class="response-team-name" style="color:${t.color}">${t.name}</div>
+          <div class="response-value">${hasResp?q.opts[resp]:'En attente...'}</div>
+        </div>
+        ${isCorrect?'<span style="color:var(--success)">✓</span>':isWrong?'<span style="color:var(--danger)">✗</span>':hasResp?'⏳':''}
+      </div>`;
+    }).join('');
+  } else {
+    el.innerHTML=state.teams.map((t,i)=>{
+      const resp=state.teamResponses[i];
+      const isCorrect=state.teamResponses['correct_'+i];
+      return `<div class="cash-resp-item">
+        <div class="cash-resp-team" style="color:${t.color}">${t.name}</div>
+        <div class="cash-resp-val">${resp||'—'}</div>
+        ${state.revealed?`<div style="margin-top:4px;display:flex;gap:6px">
+          <button class="btn-success btn-sm" onclick="markCashCorrect(${i})">✓ Correct</button>
+          <button class="btn-danger btn-sm" onclick="markCashWrong(${i})">✗ Faux</button>
+        </div>`:''}
+        ${isCorrect?'<div style="color:var(--success);font-size:12px;margin-top:2px">Marqué correct</div>':''}
+      </div>`;
+    }).join('');
+  }
+}
+function markCashCorrect(i) { state.teamResponses['correct_'+i]=true; saveState(); renderHostResponses(); }
+function markCashWrong(i) { delete state.teamResponses['correct_'+i]; saveState(); renderHostResponses(); }
+
+// ══════════════════════════════════════════
+// ÉQUIPE
+// ══════════════════════════════════════════
+function renderTeamContent() {
+  const q=state.currentQuestion;
+  const t=state.teams[activeTeamIdx];
+  if(t) {
+    document.getElementById('team-display-score').textContent=t.score;
+    document.getElementById('team-display-name').style.color=t.color;
+  }
+  const el=document.getElementById('team-content');
+  if(!q) {
+    el.innerHTML=`<div class="team-waiting"><div class="team-waiting-icon">⏳</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:0.04em;color:var(--muted)">En attente de l'animateur</div><div class="text-sm text-muted">La prochaine question apparaîtra ici</div></div>`;
+    return;
+  }
+  const typeLabel=q.type==='duo'?'Duo':q.type==='carre'?'Carré':'Cash';
+  const pts=q.type==='duo'?1:q.type==='carre'?3:5;
+  const myResp=state.teamResponses[activeTeamIdx];
+  const hasAnswered=myResp!==undefined;
+  let answerArea='';
+  if(q.type!=='cash') {
+    if(!state.revealed) {
+      answerArea=`<div class="team-answers">${q.opts.map((o,i)=>`
+        <button class="team-ans-btn ${myResp===i?'selected':''}" onclick="teamAnswer(${i})" ${hasAnswered?'disabled':''}>
+          <span class="team-ans-letter">${String.fromCharCode(65+i)}</span>${o}
+        </button>`).join('')}</div>`;
+    } else {
+      answerArea=`<div class="team-answers">${q.opts.map((o,i)=>`
+        <button class="team-ans-btn ${i===q.ans?'correct':myResp===i&&myResp!==q.ans?'wrong':''}" disabled>
+          <span class="team-ans-letter">${String.fromCharCode(65+i)}</span>${o}
+        </button>`).join('')}</div>`;
+      const correct=myResp===q.ans;
+      answerArea=`<div class="team-result-banner ${correct?'correct':'wrong'}">${correct?`✓ Bonne réponse ! +${pts} pts`:'✗ Mauvaise réponse'}</div>`+answerArea;
+    }
+  } else {
+    if(!state.revealed) {
+      answerArea=`<div class="team-cash-area">
+        ${q.hint?`<div class="team-cash-hint">💡 Indice : ${q.hint}</div>`:''}
+        <input type="text" id="cash-input" placeholder="Votre réponse..." value="${myResp||''}" ${hasAnswered?'disabled':''} style="font-size:16px;padding:12px">
+        ${!hasAnswered?`<button class="btn-primary btn-lg" onclick="teamCashAnswer()">Envoyer ma réponse</button>`:'<div style="color:var(--muted);text-align:center;font-size:14px">Réponse envoyée ✓</div>'}
+      </div>`;
+    } else {
+      const isCorrect=state.teamResponses['correct_'+activeTeamIdx];
+      answerArea=`<div class="team-result-banner ${isCorrect?'correct':myResp?'wrong':'pending'}">${isCorrect?`✓ Bonne réponse ! +${pts} pts`:myResp?'✗ Mauvaise réponse':'En attente de validation'}</div>
+        <div class="team-cash-area">
+          <div style="text-align:center;font-size:15px;color:var(--muted)">Réponse : <strong style="color:var(--text)">${q.ans}</strong></div>
+          ${myResp?`<div style="text-align:center;font-size:14px;color:var(--muted)">Votre réponse : ${myResp}</div>`:''}
+        </div>`;
+    }
+  }
+  el.innerHTML=`
+    <div class="team-q-card">
+      <div class="team-q-type">
+        <span class="badge ${q.type==='duo'?'badge-duo':q.type==='carre'?'badge-carre':'badge-cash'}">${typeLabel} — ${pts} pt${pts>1?'s':''}</span>
+        <span class="badge badge-cat" style="margin-left:6px">${q.cat}</span>
+      </div>
+      <div class="team-q-text">${q.q}</div>
+      ${answerArea}
+    </div>`;
+}
+
+function teamAnswer(optIdx) {
+  if(state.teamResponses[activeTeamIdx]!==undefined) return;
+  state.teamResponses[activeTeamIdx]=optIdx;
+  saveState(); renderTeamContent();
+}
+
+function teamCashAnswer() {
+  const val=document.getElementById('cash-input')?.value.trim();
+  if(!val) { showNotif('Entrez une réponse','error'); return; }
+  state.teamResponses[activeTeamIdx]=val;
+  saveState(); renderTeamContent();
+}
+
+// ══════════════════════════════════════════
+// TABLEAU DE BORD
+// ══════════════════════════════════════════
+function renderBoard() {
+  const sorted=[...state.teams].map((t,i)=>({...t,origIdx:i})).sort((a,b)=>b.score-a.score);
+  const maxScore=sorted[0]?.score||1;
+
+  // Podium
+  const podiumOrder=[1,0,2];
+  const podiumHtml=podiumOrder.map(rank=>{
+    const t=sorted[rank]; if(!t) return '';
+    const labels=['🥇','🥈','🥉'];
+    return `<div class="podium-col podium-${rank+1}">
+      <div class="podium-score" style="color:${t.color}">${t.score}</div>
+      <div class="podium-name">${t.name}</div>
+      <div class="podium-block">${labels[rank]}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('board-podium').innerHTML=`<div class="podium-wrap">${podiumHtml}</div>`;
+
+  // Table
+  document.getElementById('board-tbody').innerHTML=sorted.map((t,i)=>`
+    <tr class="rank-${i+1}">
+      <td style="font-family:'Bebas Neue',sans-serif;font-size:18px">${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${t.color}"></div>${t.name}</div></td>
+      <td style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${t.color}">${t.score}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="score-bar-wrap"><div class="score-bar" style="width:${Math.round(t.score/maxScore*100)}%;background:${t.color}"></div></div>
+        <span style="font-size:12px;color:var(--muted);min-width:30px">${maxScore?Math.round(t.score/maxScore*100):0}%</span>
+      </div></td>
+    </tr>`).join('');
+
+  // History
+  const bh=document.getElementById('board-history');
+  if(!state.history||!state.history.length) { bh.innerHTML='<div style="color:var(--muted);font-size:13px">Aucune question posée</div>'; return; }
+  bh.innerHTML=[...state.history].reverse().slice(0,5).map(h=>`
+    <div class="history-item">
+      <div class="history-q">${h.q}</div>
+      <div class="history-meta">
+        <span class="badge ${h.type==='duo'?'badge-duo':h.type==='carre'?'badge-carre':'badge-cash'}">${h.type==='duo'?'Duo':h.type==='carre'?'Carré':'Cash'}</span>
+        ${h.winners?.length?`<span class="history-winner">✓ ${h.winners.join(', ')}</span>`:''}
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
+
+function showNotif(msg, type='info') {
+  const el=document.getElementById('notif');
+  el.textContent=msg; el.className=`notif show ${type}`;
+  setTimeout(()=>el.classList.remove('show'), 3000);
+}
+
+function resetGame() {
+  if(!confirm('Réinitialiser la partie ? (scores remis à zéro, historique effacé)')) return;
+  state.teams.forEach(t=>t.score=0);
+  state.currentQuestion=null; state.teamResponses={}; state.revealed=false;
+  state.history=[]; state.usedIds=[];
+  saveState(); renderAdmin(); showNotif('Partie réinitialisée','info');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+initBroadcast();
+renderHome();
+setInterval(()=>{
+  const active=document.querySelector('.screen.active');
+  if(!active) return;
+  if(active.id==='screen-team' && activeTeamIdx!==null) {
+    const fresh=loadState();
+    const prev=JSON.stringify({q:state.currentQuestion,r:state.teamResponses,rev:state.revealed});
+    const next=JSON.stringify({q:fresh.currentQuestion,r:fresh.teamResponses,rev:fresh.revealed});
+    if(prev!==next) { state=fresh; renderTeamContent(); }
+    state.teams=fresh.teams;
+    const t=state.teams[activeTeamIdx];
+    if(t) document.getElementById('team-display-score').textContent=t.score;
+  }
+  if(active.id==='screen-board') { state=loadState(); renderBoard(); }
+  if(active.id==='screen-host') { state=loadState(); renderHostScores(); renderHostResponses(); }
+}, 1500);
+
+// ══════════════════════════════════════════
+// DEFAULT QUESTIONS
+// ══════════════════════════════════════════
+function getDefaultQuestions() { return [
+  // DUO
+  {type:'duo',cat:'Culture générale',q:"L'eau bout à quelle température au niveau de la mer ?",opts:["80°C","100°C"],ans:1},
+  {type:'duo',cat:'Culture générale',q:"Le Soleil est une planète ou une étoile ?",opts:["Planète","Étoile"],ans:1},
+  {type:'duo',cat:'Culture générale',q:"La Grande Muraille de Chine est sur quel continent ?",opts:["Asie","Afrique"],ans:0},
+  {type:'duo',cat:'Sport',q:"La Coupe du Monde de football a lieu tous les 4 ans ou 2 ans ?",opts:["4 ans","2 ans"],ans:0},
+  {type:'duo',cat:'Sport',q:"Le rugby à XV compte 15 ou 13 joueurs par équipe ?",opts:["15","13"],ans:0},
+  {type:'duo',cat:'Sport',q:"Le Tour de France est une course cycliste ou automobile ?",opts:["Cycliste","Automobile"],ans:0},
+  {type:'duo',cat:'Géographie',q:"Paris est la capitale de la France ou de la Belgique ?",opts:["France","Belgique"],ans:0},
+  {type:'duo',cat:'Géographie',q:"La Méditerranée est une mer ou un océan ?",opts:["Mer","Océan"],ans:0},
+  {type:'duo',cat:'Géographie',q:"Tokyo est la capitale du Japon ou de la Chine ?",opts:["Japon","Chine"],ans:0},
+  {type:'duo',cat:'Histoire',q:"La Révolution française a eu lieu au XVIIIe ou XIXe siècle ?",opts:["XVIIIe","XIXe"],ans:0},
+  {type:'duo',cat:'Histoire',q:"La 2e Guerre mondiale s'est terminée en 1945 ou 1950 ?",opts:["1945","1950"],ans:0},
+  {type:'duo',cat:'Politique',q:"Le président français est élu pour 5 ans ou 7 ans ?",opts:["5 ans","7 ans"],ans:0},
+  {type:'duo',cat:'Français',q:"\"Boire\" est un verbe du 1er ou du 3e groupe ?",opts:["1er groupe","3e groupe"],ans:1},
+  {type:'duo',cat:'Informatique',q:"HTML est un langage de balisage ou de programmation ?",opts:["Balisage","Programmation"],ans:0},
+  {type:'duo',cat:'Informatique',q:"Un octet vaut 8 bits ou 16 bits ?",opts:["8 bits","16 bits"],ans:0},
+  {type:'duo',cat:'Cyber / Wi-Fi',q:"HTTPS est plus sécurisé que HTTP : vrai ou faux ?",opts:["Vrai","Faux"],ans:0},
+  {type:'duo',cat:'Cyber / Wi-Fi',q:"Le Wi-Fi 6 est plus rapide que le Wi-Fi 5 ?",opts:["Plus rapide","Moins rapide"],ans:0},
+  // CARRÉ
+  {type:'carre',cat:'Culture générale',q:"Combien de continents compte la Terre ?",opts:["5","6","7","8"],ans:2},
+  {type:'carre',cat:'Culture générale',q:"Qui a peint la Joconde ?",opts:["Raphaël","Michel-Ange","Léonard de Vinci","Botticelli"],ans:2},
+  {type:'carre',cat:'Culture générale',q:"Quelle planète est la plus proche du Soleil ?",opts:["Vénus","Mars","Mercure","Terre"],ans:2},
+  {type:'carre',cat:'Culture générale',q:"Quelle est la formule chimique de l'eau ?",opts:["CO2","H2O","O2","NaCl"],ans:1},
+  {type:'carre',cat:'Sport',q:"Dans quel sport utilise-t-on un volant (shuttlecock) ?",opts:["Tennis","Squash","Badminton","Ping-pong"],ans:2},
+  {type:'carre',cat:'Sport',q:"Combien de joueurs sur un terrain de basketball ?",opts:["4","5","6","7"],ans:1},
+  {type:'carre',cat:'Sport',q:"Quel pays a remporté la Coupe du Monde 2018 ?",opts:["Brésil","Argentine","Allemagne","France"],ans:3},
+  {type:'carre',cat:'Géographie',q:"Quelle est la capitale du Canada ?",opts:["Toronto","Montréal","Vancouver","Ottawa"],ans:3},
+  {type:'carre',cat:'Géographie',q:"Quel est le plus long fleuve du monde ?",opts:["Amazone","Congo","Nil","Mississippi"],ans:2},
+  {type:'carre',cat:'Histoire',q:"En quelle année est tombé le mur de Berlin ?",opts:["1985","1987","1989","1991"],ans:2},
+  {type:'carre',cat:'Histoire',q:"Quelle civilisation a construit les pyramides de Gizeh ?",opts:["Sumérienne","Grecque","Égyptienne","Romaine"],ans:2},
+  {type:'carre',cat:'Histoire',q:"En quelle année a eu lieu la Révolution russe ?",opts:["1905","1912","1917","1921"],ans:2},
+  {type:'carre',cat:'Politique',q:"Combien de sièges à l'Assemblée nationale française ?",opts:["377","477","577","677"],ans:2},
+  {type:'carre',cat:'Français',q:"Quel écrivain a écrit \"Les Misérables\" ?",opts:["Zola","Balzac","Hugo","Flaubert"],ans:2},
+  {type:'carre',cat:'Français',q:"Quel est le pluriel de \"bal\" ?",opts:["Bals","Baux","Bauls","Bales"],ans:0},
+  {type:'carre',cat:'Informatique',q:"Que signifie \"RAM\" ?",opts:["Read Access Memory","Random Access Memory","Rapid Array Memory","Real Access Module"],ans:1},
+  {type:'carre',cat:'Informatique',q:"Quel langage stylise les pages web ?",opts:["Java","Python","CSS","SQL"],ans:2},
+  {type:'carre',cat:'Informatique',q:"Quel système de gestion de versions est le plus utilisé ?",opts:["SVN","CVS","Git","Mercurial"],ans:2},
+  {type:'carre',cat:'Cyber / Wi-Fi',q:"Quel protocole chiffre les communications HTTPS ?",opts:["FTP","TLS/SSL","HTTP","SMTP"],ans:1},
+  {type:'carre',cat:'Cyber / Wi-Fi',q:"Que signifie VPN ?",opts:["Virus Protection Network","Virtual Private Network","Variable Protocol Node","Verified Personal Name"],ans:1},
+  {type:'carre',cat:'Cyber / Wi-Fi',q:"Qu'est-ce que le phishing ?",opts:["Un type de virus","Une attaque DDoS","Une tentative d'hameçonnage","Un protocole de chiffrement"],ans:2},
+  // CASH
+  {type:'cash',cat:'Culture générale',q:"En quelle année a été construite la Tour Eiffel ?",ans:"1889",hint:"XIXe siècle"},
+  {type:'cash',cat:'Culture générale',q:"Quel est le symbole chimique de l'or ?",ans:"Au",hint:"Pas OR ni GO"},
+  {type:'cash',cat:'Sport',q:"En quelle année la France a-t-elle gagné sa 1ère Coupe du Monde de football ?",ans:"1998",hint:"Fin des années 90"},
+  {type:'cash',cat:'Géographie',q:"Combien de départements compte la France métropolitaine ?",ans:"96",hint:"Entre 90 et 100"},
+  {type:'cash',cat:'Histoire',q:"En quelle année Christophe Colomb a-t-il découvert l'Amérique ?",ans:"1492",hint:"Fin du XVe siècle"},
+  {type:'cash',cat:'Histoire',q:"Combien d'années a duré la Seconde Guerre mondiale ?",ans:"6",hint:"De 1939 à 1945"},
+  {type:'cash',cat:'Politique',q:"En quelle année la France a accordé le droit de vote aux femmes ?",ans:"1944",hint:"Pendant la Seconde Guerre"},
+  {type:'cash',cat:'Français',q:"Qui a écrit \"À la recherche du temps perdu\" ?",ans:"Marcel Proust",hint:"Auteur du début du XXe siècle"},
+  {type:'cash',cat:'Informatique',q:"En quelle année a été créé le langage Python ?",ans:"1991",hint:"Début des années 90"},
+  {type:'cash',cat:'Informatique',q:"Combien de bits comporte une adresse IPv4 ?",ans:"32",hint:"C'est une puissance de 2"},
+  {type:'cash',cat:'Cyber / Wi-Fi',q:"Quel port TCP utilise HTTPS par défaut ?",ans:"443",hint:"Pas 80"},
+  {type:'cash',cat:'Cyber / Wi-Fi',q:"En quelle année le RGPD est entré en vigueur en Europe ?",ans:"2018",hint:"Après 2015"},
+];}
+</script>
+</body>
+</html>

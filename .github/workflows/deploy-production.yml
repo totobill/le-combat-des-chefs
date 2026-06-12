@@ -1,0 +1,91 @@
+# Déploiement production au push sur `main`, sur un exécuteur auto-hébergé.
+#
+# Runner labels : self-hosted, combat-des-chefs
+# Variable dépôt : PRODUCTION_ENV_FILE → chemin absolu vers .env.prod sur l'iMac
+
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & déployer (Docker Compose prod + tunnel)
+    runs-on: [self-hosted, combat-des-chefs]
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Charger .env.prod
+        env:
+          PRODUCTION_ENV_FILE: ${{ vars.PRODUCTION_ENV_FILE }}
+        run: |
+          set -euo pipefail
+          if [ -n "${PRODUCTION_ENV_FILE:-}" ] && [ -f "$PRODUCTION_ENV_FILE" ]; then
+            cp "$PRODUCTION_ENV_FILE" .env.prod
+          fi
+          if [ ! -f .env.prod ]; then
+            echo "Aucun .env.prod : définissez PRODUCTION_ENV_FILE ou fournissez .env.prod."
+            exit 1
+          fi
+          if ! grep -qE '^TUNNEL_TOKEN=[^[:space:]]' .env.prod; then
+            token=$(grep -E '^CLOUDFLARE_TOKEN_PROD=' .env.prod 2>/dev/null | cut -d= -f2- | tr -d '\r"' || true)
+            if [ -n "$token" ]; then
+              echo "TUNNEL_TOKEN=$token" >> .env.prod
+            fi
+          fi
+          if ! grep -qE '^TUNNEL_TOKEN=[^[:space:]]' .env.prod; then
+            echo "TUNNEL_TOKEN ou CLOUDFLARE_TOKEN_PROD manquant dans .env.prod."
+            exit 1
+          fi
+
+      - name: Migrations Alembic
+        env:
+          COMPOSE_FILE: docker-compose.prod.yml
+        run: |
+          set -euo pipefail
+          docker compose -f "$COMPOSE_FILE" --env-file .env.prod \
+            run --rm backend alembic upgrade head
+
+      - name: Docker Compose — build & up
+        env:
+          COMPOSE_FILE: docker-compose.prod.yml
+          GIT_HEAD: ${{ github.sha }}
+          DOCKER_BUILDKIT: "1"
+          BUILDKIT_PROGRESS: plain
+        run: |
+          set -euo pipefail
+          docker buildx use desktop-linux 2>/dev/null || docker buildx use default
+          echo "=== Build backend $(date -u +%H:%M:%S) UTC ==="
+          docker compose --progress plain -f "$COMPOSE_FILE" --env-file .env.prod \
+            build --no-cache backend
+          echo "=== Build app $(date -u +%H:%M:%S) UTC ==="
+          docker compose --progress plain -f "$COMPOSE_FILE" --env-file .env.prod \
+            build --no-cache app
+          echo "=== Up $(date -u +%H:%M:%S) UTC ==="
+          docker compose -f "$COMPOSE_FILE" --env-file .env.prod \
+            --profile tunnel up -d --no-build --force-recreate --remove-orphans
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          PORT=$(grep -E '^PORT_APP_PROD=' .env.prod 2>/dev/null | cut -d= -f2 | tr -d '\r' | tr -d '"' || true)
+          PORT=${PORT:-8091}
+          sleep 5
+          curl -fsS "http://127.0.0.1:${PORT}/health"
+
+      - name: Nettoyage images obsolètes du projet
+        run: |
+          set -euo pipefail
+          ids=$(docker images --filter "reference=combat-des-chefs*" -q | tail -n +4)
+          if [ -n "$ids" ]; then
+            echo "$ids" | xargs docker rmi -f || true
+          fi

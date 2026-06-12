@@ -1,0 +1,41 @@
+<div class="page-center home">
+  <h1 class="font-bebas title">LE COMBAT<br /><span>DES CHEFS</span></h1>
+  <p class="subtitle">Séminaire · Épreuves · Classement live</p>
+
+  <div class="grid-cards">
+    <a routerLink="/admin/login" class="nav-card">
+      <div class="icon">⚙️</div>
+      <div class="font-bebas card-title">Admin</div>
+      <div class="desc">Équipes, barèmes, contenu</div>
+    </a>
+    <a routerLink="/host" class="nav-card">
+      <div class="icon">🎙️</div>
+      <div class="font-bebas card-title">Animateur</div>
+      <div class="desc">Lancer les épreuves</div>
+    </a>
+    <a routerLink="/board" class="nav-card">
+      <div class="icon">🏆</div>
+      <div class="font-bebas card-title">Grand écran</div>
+      <div class="desc">Classement en direct</div>
+    </a>
+    <a routerLink="/join" class="nav-card">
+      <div class="icon">📱</div>
+      <div class="font-bebas card-title">Rejoindre</div>
+      <div class="desc">Équipe · Téléphone</div>
+    </a>
+  </div>
+
+  @if (teams.length) {
+    <div class="teams-preview card">
+      <div class="font-bebas section-title">Équipes</div>
+      <div class="team-row">
+        @for (t of teams; track t.id) {
+          <span class="team-pill" [style.borderColor]="t.color">
+            <span class="dot" [style.background]="t.color"></span>
+            {{ t.name }} · {{ t.score_total }} pts
+          </span>
+        }
+      </div>
+    </div>
+  }
+</div>

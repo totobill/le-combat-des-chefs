@@ -1,0 +1,43 @@
+.title {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.form-card {
+  width: 100%;
+  max-width: 380px;
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  input {
+    margin-bottom: 12px;
+  }
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.back {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
