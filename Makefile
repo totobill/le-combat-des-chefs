@@ -63,7 +63,7 @@ frontend-build: ## Build Angular production
 prod-migrate: ## Migrations Alembic en prod (build backend d'abord — pas de pull Docker Hub)
 	@test -f $(ENV_PROD) || (echo "Fichier $(ENV_PROD) manquant." && exit 1)
 	DOCKER_BUILDKIT=1 $(COMPOSE_PROD) --env-file $(ENV_PROD) build backend
-	$(COMPOSE_PROD) --env-file $(ENV_PROD) run --rm --no-build backend alembic upgrade head
+	$(COMPOSE_PROD) --env-file $(ENV_PROD) run --rm backend alembic upgrade head
 
 prod-build: ## Build images Docker backend + app
 	@test -f $(ENV_PROD) || (echo "Fichier $(ENV_PROD) manquant." && exit 1)
