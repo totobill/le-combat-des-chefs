@@ -120,3 +120,36 @@ button + button {
   margin-left: 8px;
   margin-bottom: 8px;
 }
+
+.mdp-live {
+  margin-bottom: 16px;
+  background: var(--surface2);
+  text-align: center;
+
+  .mdp-timer {
+    font-size: 48px;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+}
+
+.mdp-done {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.player-label {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 8px;
+}

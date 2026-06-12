@@ -25,7 +25,7 @@ export class TeamComponent implements OnInit, OnDestroy {
   // MDP
   mdpView: Record<string, unknown> = {};
   mdpTimer = signal(30);
-  private mdpInterval?: ReturnType<typeof setInterval>;
+  private mdpPoll?: ReturnType<typeof setInterval>;
 
   // Paroles
   parolesView: Record<string, unknown> = {};
@@ -44,10 +44,11 @@ export class TeamComponent implements OnInit, OnDestroy {
     this.game.connectWs();
     await this.sync();
     setInterval(() => this.sync(), 1500);
+    this.mdpPoll = setInterval(() => this.pollMdp(), 500);
   }
 
   ngOnDestroy(): void {
-    if (this.mdpInterval) clearInterval(this.mdpInterval);
+    if (this.mdpPoll) clearInterval(this.mdpPoll);
   }
 
   async sync(): Promise<void> {
@@ -61,8 +62,7 @@ export class TeamComponent implements OnInit, OnDestroy {
       this.dccView = await this.game.apiGet('/dcc/current');
     }
     if (this.currentModule === 'mdp') {
-      this.mdpView = await this.game.apiGet('/mdp/player-view');
-      this.setupMdpTimer();
+      await this.pollMdp();
     }
     if (this.currentModule === 'paroles') {
       this.parolesView = await this.game.apiGet('/paroles/view');
@@ -76,22 +76,16 @@ export class TeamComponent implements OnInit, OnDestroy {
     }
   }
 
-  setupMdpTimer(): void {
-    if (!this.mdpView['active']) {
-      if (this.mdpInterval) clearInterval(this.mdpInterval);
-      return;
-    }
-    if (this.mdpInterval) return;
-    this.mdpTimer.set(30);
-    this.mdpInterval = setInterval(() => {
-      const v = this.mdpTimer() - 1;
-      this.mdpTimer.set(v);
-      if (v <= 0) {
-        clearInterval(this.mdpInterval);
-        this.mdpInterval = undefined;
-        this.game.apiPost('/mdp/end-turn').then(() => this.sync());
-      }
-    }, 1000);
+  async pollMdp(): Promise<void> {
+    if (this.currentModule !== 'mdp') return;
+    this.mdpView = await this.game.apiGet('/mdp/player-view');
+    const remaining = (this.mdpView['remaining_sec'] as number) ?? 0;
+    this.mdpTimer.set(remaining);
+
+  }
+
+  mdpPhase(): string {
+    return (this.mdpView['phase'] as string) || 'waiting';
   }
 
   async dccChoose(mode: string): Promise<void> {
@@ -111,9 +105,9 @@ export class TeamComponent implements OnInit, OnDestroy {
   }
 
   async mdpNextWord(): Promise<void> {
+    if (this.mdpPhase() !== 'playing' || this.mdpTimer() <= 0) return;
     await this.game.apiPost('/mdp/next-word');
-    this.mdpTimer.set(30);
-    await this.sync();
+    await this.pollMdp();
   }
 
   async parolesSubmit(): Promise<void> {

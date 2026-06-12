@@ -40,18 +40,46 @@
     @if (module() === 'mdp') {
       <section class="card">
         <h2 class="font-bebas">Mot de Passe</h2>
-        <p class="hint">30 s par joueur · Le joueur tient le téléphone sur son front.</p>
+        <p class="hint">
+          30 s par joueur · Mot trouvé = tap sur l'écran · Fin du chrono = pause ·
+          <strong>L'animateur relance</strong> le joueur suivant.
+        </p>
+
+        @if (mdpCurrent()) {
+          <div class="mdp-live card">
+            <div class="font-bebas mdp-timer">{{ mdpCurrent()!['remaining_sec'] }}s</div>
+            <p>
+              En cours :
+              <strong>{{ teamNameById($any(mdpCurrent())['team_id']) }}</strong>
+              · Joueur {{ ($any(mdpCurrent())['player_index'] ?? 0) + 1 }}
+              · {{ mdpCurrent()!['words_found'] }} mot(s)
+            </p>
+            <button class="btn btn-danger btn-sm" (click)="mdpForceEnd()">Arrêter le passage</button>
+          </div>
+        } @else if (mdpLastTurn()) {
+          <div class="mdp-done">
+            Passage terminé —
+            <strong>{{ teamNameById($any(mdpLastTurn())['team_id']) }}</strong>
+            joueur {{ ($any(mdpLastTurn())['player_index'] ?? 0) + 1 }} :
+            <strong>{{ mdpLastTurn()!['words_found'] }} mot(s)</strong>.
+            Placez le prochain joueur puis lancez.
+          </div>
+        }
+
         <div class="row">
           <select [(ngModel)]="mdpTeamId">
             @for (t of teams; track t.id) {
               <option [value]="t.id">{{ t.name }}</option>
             }
           </select>
-          <input type="number" [(ngModel)]="mdpPlayerIndex" min="0" max="4" />
-          <button class="btn btn-primary" (click)="mdpStartTurn()">Lancer passage</button>
+          <label class="player-label">Joueur n°</label>
+          <input type="number" [(ngModel)]="mdpPlayerIndex" min="0" max="4" class="num" />
+          <button class="btn btn-primary btn-lg" [disabled]="!mdpCanStart()" (click)="mdpStartTurn()">
+            {{ mdpCanStart() ? '▶ Lancer le passage (30 s)' : 'Passage en cours…' }}
+          </button>
         </div>
-        @if (mdpState()['current']) {
-          <pre class="debug">{{ mdpState()['current'] | json }}</pre>
+        @if (mdpError) {
+          <p class="error">{{ mdpError }}</p>
         }
         <h3>Classement épreuve (1/2/3)</h3>
         @for (t of teams; track t.id) {

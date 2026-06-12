@@ -221,7 +221,10 @@ async def mdp_start_turn(
     _=Depends(require_admin),
 ) -> dict:
     session = await ensure_session(db)
-    data = await mod.mdp_start_team_round(db, session, str(body.team_id), body.player_index)
+    try:
+        data = await mod.mdp_start_team_round(db, session, str(body.team_id), body.player_index)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
     await db.commit()
     await _broadcast(db)
     return data
@@ -244,12 +247,25 @@ async def mdp_next_word(db: AsyncSession = Depends(get_db), user=Depends(require
 
 
 @router.post("/mdp/end-turn")
-async def mdp_end_turn(db: AsyncSession = Depends(get_db), user=Depends(require_team)) -> dict:
+async def mdp_end_turn(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_team),
+) -> dict:
     session = await ensure_session(db)
-    try:
-        data = await mod.mdp_end_turn(db, session)
-    except ValueError as e:
-        raise HTTPException(400, str(e)) from e
+    es = await mod.get_event_state(db, session)
+    current = es.state.get("mdp", {}).get("current", {})
+    if current.get("team_id") != str(team_uuid(user)):
+        raise HTTPException(403, "Ce n'est pas votre passage")
+    data = await mod.mdp_end_turn(db, session)
+    await db.commit()
+    await _broadcast(db)
+    return data
+
+
+@router.post("/mdp/end-turn/force")
+async def mdp_end_turn_force(db: AsyncSession = Depends(get_db), _=Depends(require_admin)) -> dict:
+    session = await ensure_session(db)
+    data = await mod.mdp_end_turn(db, session)
     await db.commit()
     await _broadcast(db)
     return data
@@ -258,19 +274,17 @@ async def mdp_end_turn(db: AsyncSession = Depends(get_db), user=Depends(require_
 @router.get("/mdp/player-view")
 async def mdp_player_view(db: AsyncSession = Depends(get_db), user=Depends(require_team)) -> dict:
     session = await ensure_session(db)
-    es = await mod.get_event_state(db, session)
-    mdp = es.state.get("mdp", {})
-    current = mdp.get("current", {})
-    tid = str(team_uuid(user))
-    if current.get("team_id") != tid:
-        return {"active": False, "word": None}
-    return {
-        "active": current.get("active", False),
-        "word": current.get("word") if current.get("active") else None,
-        "words_found": current.get("words_found", 0),
-        "player_index": current.get("player_index"),
-        "duration_sec": 30,
-    }
+    data = await mod.mdp_player_view(db, session, str(team_uuid(user)))
+    await db.commit()
+    return data
+
+
+@router.get("/mdp/host-view")
+async def mdp_host_view(db: AsyncSession = Depends(get_db), _=Depends(require_admin)) -> dict:
+    session = await ensure_session(db)
+    data = await mod.mdp_host_view(db, session)
+    await db.commit()
+    return data
 
 
 @router.post("/mdp/finalize")

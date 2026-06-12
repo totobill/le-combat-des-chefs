@@ -21,6 +21,8 @@ export class HostComponent implements OnInit, OnDestroy {
   // MDP
   mdpTeamId = '';
   mdpPlayerIndex = 0;
+  mdpHostView: Record<string, unknown> = {};
+  mdpError = '';
 
   // Chips
   chips: { id: string; name: string; flavors: string[] }[] = [];
@@ -41,6 +43,7 @@ export class HostComponent implements OnInit, OnDestroy {
   async ngOnInit(): Promise<void> {
     this.game.connectWs();
     await this.load();
+    await this.refreshMdpHost();
     try {
       this.chips = await this.game.apiGet('/chips');
       if (this.chips.length) this.selectedChipId = this.chips[0].id;
@@ -53,7 +56,10 @@ export class HostComponent implements OnInit, OnDestroy {
         this.teams = s.teams;
         this.state = s.event.state;
       }
-    }, 1500);
+      if (this.module() === 'mdp') {
+        this.refreshMdpHost();
+      }
+    }, 1000);
   }
 
   ngOnDestroy(): void {
@@ -84,14 +90,50 @@ export class HostComponent implements OnInit, OnDestroy {
   }
 
   // MDP
-  async mdpStartTurn(): Promise<void> {
-    await this.game.apiPost('/mdp/start-turn', {
-      team_id: this.mdpTeamId,
-      player_index: this.mdpPlayerIndex,
-    });
+  async refreshMdpHost(): Promise<void> {
+    try {
+      this.mdpHostView = await this.game.apiGet('/mdp/host-view');
+    } catch {
+      /* */
+    }
   }
+
+  async mdpStartTurn(): Promise<void> {
+    this.mdpError = '';
+    try {
+      await this.game.apiPost('/mdp/start-turn', {
+        team_id: this.mdpTeamId,
+        player_index: this.mdpPlayerIndex,
+      });
+      await this.refreshMdpHost();
+    } catch (e: unknown) {
+      this.mdpError = 'Impossible de lancer : un passage est peut-être encore en cours';
+    }
+  }
+
+  async mdpForceEnd(): Promise<void> {
+    await this.game.apiPost('/mdp/end-turn/force');
+    await this.refreshMdpHost();
+  }
+
   async mdpFinalize(): Promise<void> {
     await this.game.apiPost('/mdp/finalize', { placement: this.placement });
+  }
+
+  mdpCanStart(): boolean {
+    return this.mdpHostView['can_start'] !== false;
+  }
+
+  mdpCurrent(): Record<string, unknown> | null {
+    return (this.mdpHostView['current'] as Record<string, unknown>) || null;
+  }
+
+  mdpLastTurn(): Record<string, unknown> | null {
+    return (this.mdpHostView['last_turn'] as Record<string, unknown>) || null;
+  }
+
+  teamNameById(id: string): string {
+    return this.teams.find((t) => t.id === id)?.name ?? id;
   }
 
   // Paroles

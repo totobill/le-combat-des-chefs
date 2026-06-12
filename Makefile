@@ -60,9 +60,10 @@ frontend-build: ## Build Angular production
 
 # ─── Production (Docker) ─────────────────────────────────────────────────────
 
-prod-migrate: ## Migrations Alembic en prod (nécessite $(ENV_PROD))
+prod-migrate: ## Migrations Alembic en prod (build backend d'abord — pas de pull Docker Hub)
 	@test -f $(ENV_PROD) || (echo "Fichier $(ENV_PROD) manquant." && exit 1)
-	$(COMPOSE_PROD) --env-file $(ENV_PROD) run --rm backend alembic upgrade head
+	DOCKER_BUILDKIT=1 $(COMPOSE_PROD) --env-file $(ENV_PROD) build backend
+	$(COMPOSE_PROD) --env-file $(ENV_PROD) run --rm --no-build backend alembic upgrade head
 
 prod-build: ## Build images Docker backend + app
 	@test -f $(ENV_PROD) || (echo "Fichier $(ENV_PROD) manquant." && exit 1)
@@ -87,4 +88,12 @@ prod-logs: ## Logs stack prod
 prod-health: ## Health check HTTP local (port $(PORT_APP_PROD))
 	@curl -fsS "http://127.0.0.1:$(PORT_APP_PROD)/health" && echo ""
 
-prod-deploy: prod-migrate prod-build prod-up prod-health ## Migrate + build + up + health (équivalent CI)
+prod-deploy: prod-build-backend prod-migrate prod-build-app prod-up prod-health ## Build back, migrate, build app, up, health
+
+prod-build-backend: ## Build image backend uniquement
+	@test -f $(ENV_PROD) || (echo "Fichier $(ENV_PROD) manquant." && exit 1)
+	DOCKER_BUILDKIT=1 $(COMPOSE_PROD) --env-file $(ENV_PROD) build --no-cache backend
+
+prod-build-app: ## Build image app uniquement
+	@test -f $(ENV_PROD) || (echo "Fichier $(ENV_PROD) manquant." && exit 1)
+	DOCKER_BUILDKIT=1 $(COMPOSE_PROD) --env-file $(ENV_PROD) build --no-cache app

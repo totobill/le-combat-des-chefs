@@ -21,6 +21,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: combat-des-chefs-backend:latest
+    pull_policy: build
     restart: unless-stopped
     env_file: .env.prod
     environment:
@@ -34,6 +35,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     image: combat-des-chefs-app:latest
+    pull_policy: build
     restart: unless-stopped
     ports:
       - "${PORT_APP_PROD:-8091}:80"

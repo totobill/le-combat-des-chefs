@@ -47,15 +47,7 @@ jobs:
             exit 1
           fi
 
-      - name: Migrations Alembic
-        env:
-          COMPOSE_FILE: docker-compose.prod.yml
-        run: |
-          set -euo pipefail
-          docker compose -f "$COMPOSE_FILE" --env-file .env.prod \
-            run --rm backend alembic upgrade head
-
-      - name: Docker Compose — build & up
+      - name: Docker Compose — build, migrate & up
         env:
           COMPOSE_FILE: docker-compose.prod.yml
           GIT_HEAD: ${{ github.sha }}
@@ -64,9 +56,18 @@ jobs:
         run: |
           set -euo pipefail
           docker buildx use desktop-linux 2>/dev/null || docker buildx use default
+
+          # 1) Build backend AVANT migrate (sinon Docker tente un pull de combat-des-chefs-backend sur Docker Hub)
           echo "=== Build backend $(date -u +%H:%M:%S) UTC ==="
           docker compose --progress plain -f "$COMPOSE_FILE" --env-file .env.prod \
             build --no-cache backend
+
+          # 2) Migrations (image locale, pas de pull)
+          echo "=== Migrations Alembic $(date -u +%H:%M:%S) UTC ==="
+          docker compose -f "$COMPOSE_FILE" --env-file .env.prod \
+            run --rm --no-build backend alembic upgrade head
+
+          # 3) Build frontend + démarrage
           echo "=== Build app $(date -u +%H:%M:%S) UTC ==="
           docker compose --progress plain -f "$COMPOSE_FILE" --env-file .env.prod \
             build --no-cache app

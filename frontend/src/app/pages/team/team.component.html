@@ -58,21 +58,23 @@
 
   @if (currentModule === 'mdp') {
     <section class="card module-card mdp">
-      @if (mdpView['active'] && mdpView['word']) {
+      @if (mdpPhase() === 'playing' && mdpView['word']) {
         <div class="timer font-bebas" [class.warn]="mdpTimer() <= 5">{{ mdpTimer() }}s</div>
         <div class="word font-bebas">{{ mdpView['word'] }}</div>
         <p class="hint">Tenez le téléphone au-dessus de votre front</p>
         <button class="btn btn-success btn-lg w-full tap" (click)="mdpNextWord()">
-          Mot trouvé → suivant ({{ mdpView['words_found'] || 0 }})
+          ✓ Mot trouvé → suivant ({{ mdpView['words_found'] || 0 }} validé(s))
         </button>
-      } @else if (mdpView['active'] === false && mdpTimer() <= 0) {
+      } @else if (mdpPhase() === 'ended') {
         <div class="ended">
           <div class="font-bebas">Temps écoulé !</div>
-          <p>Mots trouvés : {{ mdpView['words_found'] || 0 }}</p>
+          <p class="score-line">{{ mdpView['words_found'] || 0 }} mot(s) trouvé(s)</p>
+          <p class="hint">{{ mdpView['message'] }}</p>
         </div>
       } @else {
         <div class="waiting">
-          <p>En attente de votre passage</p>
+          <div class="icon">🎭</div>
+          <p>{{ mdpView['message'] || "En attente que l'animateur lance votre passage" }}</p>
         </div>
       }
     </section>

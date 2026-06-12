@@ -162,80 +162,195 @@ async def dcc_reveal_and_score(db: AsyncSession, session: GameSession) -> dict:
 
 # ─── MDP ───────────────────────────────────────────────────────────
 
-async def mdp_start_team_round(db: AsyncSession, session: GameSession, team_id: str, player_index: int) -> dict:
+def _mdp_now_iso() -> str:
+    from datetime import UTC, datetime
+
+    return datetime.now(UTC).isoformat()
+
+
+def _mdp_remaining_sec(current: dict) -> int:
+    from datetime import UTC, datetime
+
+    started = current.get("started_at")
+    if not started:
+        return 0
+    duration = int(current.get("duration_sec", 30))
+    started_dt = datetime.fromisoformat(started.replace("Z", "+00:00"))
+    elapsed = (datetime.now(UTC) - started_dt).total_seconds()
+    return max(0, int(duration - elapsed))
+
+
+def _mdp_is_playing(mdp: dict) -> bool:
+    current = mdp.get("current")
+    return bool(current and current.get("phase") == "playing")
+
+
+async def _mdp_pick_word(db: AsyncSession, session: GameSession, exclude_id: str | None = None) -> MdpWord:
     result = await db.execute(
         select(MdpWord).where(MdpWord.session_id == session.id, MdpWord.used.is_(False))
     )
     words = list(result.scalars())
     if not words:
         for w in (await db.execute(select(MdpWord).where(MdpWord.session_id == session.id))).scalars():
+            if exclude_id and str(w.id) == exclude_id:
+                continue
             w.used = False
-        words = list((await db.execute(select(MdpWord).where(MdpWord.session_id == session.id))).scalars())
-
-    es = await get_event_state(db, session)
-    mdp = es.state.get("mdp", {"team_scores": {}, "current": None})
+        words = [
+            w
+            for w in (await db.execute(select(MdpWord).where(MdpWord.session_id == session.id))).scalars()
+            if not exclude_id or str(w.id) != exclude_id
+        ]
+    if not words:
+        raise ValueError("Plus de mots disponibles")
     word = random.choice(words)
     word.used = True
+    return word
+
+
+async def mdp_expire_if_needed(db: AsyncSession, session: GameSession) -> dict | None:
+    """Clôture le passage si les 30 s sont écoulées."""
+    es = await get_event_state(db, session)
+    mdp = es.state.get("mdp", {})
+    current = mdp.get("current")
+    if not current or current.get("phase") != "playing":
+        return None
+    if _mdp_remaining_sec(current) > 0:
+        return None
+    return await mdp_end_turn(db, session)
+
+
+async def mdp_start_team_round(db: AsyncSession, session: GameSession, team_id: str, player_index: int) -> dict:
+    es = await get_event_state(db, session)
+    mdp = es.state.get("mdp", {"team_scores": {}})
+
+    await mdp_expire_if_needed(db, session)
+    es = await get_event_state(db, session)
+    mdp = es.state.get("mdp", {"team_scores": {}})
+
+    if _mdp_is_playing(mdp):
+        raise ValueError("Un passage est encore en cours — attendez la fin des 30 secondes")
+
+    word = await _mdp_pick_word(db, session)
     mdp["current"] = {
         "team_id": team_id,
         "player_index": player_index,
         "word": word.word,
         "word_id": str(word.id),
         "words_found": 0,
-        "started_at": __import__("datetime").datetime.now(__import__("datetime").UTC).isoformat(),
+        "started_at": _mdp_now_iso(),
         "duration_sec": 30,
-        "active": True,
+        "phase": "playing",
     }
+    mdp.pop("last_turn", None)
     es.state = {**es.state, "mdp": mdp}
     await set_module_state(db, session, "mdp", es.state)
-    return mdp["current"]
+    return {**mdp["current"], "remaining_sec": 30}
 
 
 async def mdp_next_word(db: AsyncSession, session: GameSession) -> dict:
     es = await get_event_state(db, session)
     mdp = es.state.get("mdp", {})
     current = mdp.get("current")
-    if not current or not current.get("active"):
+    if not current or current.get("phase") != "playing":
         raise ValueError("Pas de passage actif")
+    if _mdp_remaining_sec(current) <= 0:
+        raise ValueError("Temps écoulé")
 
-    result = await db.execute(
-        select(MdpWord).where(MdpWord.session_id == session.id, MdpWord.used.is_(False))
-    )
-    words = list(result.scalars())
-    if not words:
-        for w in (await db.execute(select(MdpWord).where(MdpWord.session_id == session.id))).scalars():
-            if str(w.id) != current.get("word_id"):
-                w.used = False
-        words = [w for w in (await db.execute(
-            select(MdpWord).where(MdpWord.session_id == session.id)
-        )).scalars() if str(w.id) != current.get("word_id")]
-
+    word = await _mdp_pick_word(db, session, exclude_id=current.get("word_id"))
     current["words_found"] = current.get("words_found", 0) + 1
-    if words:
-        word = random.choice(words)
-        word.used = True
-        current["word"] = word.word
-        current["word_id"] = str(word.id)
+    current["word"] = word.word
+    current["word_id"] = str(word.id)
     es.state = {**es.state, "mdp": mdp}
-    return current
+    return {**current, "remaining_sec": _mdp_remaining_sec(current)}
 
 
 async def mdp_end_turn(db: AsyncSession, session: GameSession) -> dict:
     es = await get_event_state(db, session)
     mdp = es.state.get("mdp", {"team_scores": {}})
+    if "team_scores" not in mdp:
+        mdp["team_scores"] = {}
+
     current = mdp.get("current")
     if not current:
-        raise ValueError("Pas de passage actif")
+        return mdp
+
+    if current.get("phase") == "ended":
+        return mdp
+
     team_id = current["team_id"]
     found = current.get("words_found", 0)
-    mdp.setdefault("team_scores", {})
     mdp["team_scores"].setdefault(team_id, [])
     mdp["team_scores"][team_id].append({"player": current["player_index"], "words": found})
-    current["active"] = False
-    current["word"] = None
-    mdp["current"] = current
+    mdp["last_turn"] = {
+        "team_id": team_id,
+        "player_index": current["player_index"],
+        "words_found": found,
+        "ended_at": _mdp_now_iso(),
+    }
+    mdp["current"] = None
     es.state = {**es.state, "mdp": mdp}
     return mdp
+
+
+async def mdp_player_view(db: AsyncSession, session: GameSession, team_id: str) -> dict:
+    await mdp_expire_if_needed(db, session)
+    es = await get_event_state(db, session)
+    mdp = es.state.get("mdp", {})
+    current = mdp.get("current")
+    last_turn = mdp.get("last_turn")
+
+    if not current or current.get("team_id") != team_id:
+        if last_turn and last_turn.get("team_id") == team_id:
+            return {
+                "phase": "ended",
+                "active": False,
+                "word": None,
+                "words_found": last_turn.get("words_found", 0),
+                "player_index": last_turn.get("player_index"),
+                "remaining_sec": 0,
+                "message": "Temps écoulé ! En attente du prochain joueur.",
+            }
+        return {
+            "phase": "waiting",
+            "active": False,
+            "word": None,
+            "words_found": 0,
+            "remaining_sec": 0,
+            "message": "En attente que l'animateur lance votre passage.",
+        }
+
+    remaining = _mdp_remaining_sec(current)
+    if remaining <= 0:
+        await mdp_end_turn(db, session)
+        return await mdp_player_view(db, session, team_id)
+
+    return {
+        "phase": "playing",
+        "active": True,
+        "word": current.get("word"),
+        "words_found": current.get("words_found", 0),
+        "player_index": current.get("player_index"),
+        "remaining_sec": remaining,
+        "duration_sec": current.get("duration_sec", 30),
+        "started_at": current.get("started_at"),
+    }
+
+
+async def mdp_host_view(db: AsyncSession, session: GameSession) -> dict:
+    await mdp_expire_if_needed(db, session)
+    es = await get_event_state(db, session)
+    mdp = es.state.get("mdp", {"team_scores": {}})
+    current = mdp.get("current")
+    payload: dict[str, Any] = {
+        "team_scores": mdp.get("team_scores", {}),
+        "last_turn": mdp.get("last_turn"),
+        "can_start": not _mdp_is_playing(mdp),
+    }
+    if current and current.get("phase") == "playing":
+        payload["current"] = {**current, "remaining_sec": _mdp_remaining_sec(current)}
+    else:
+        payload["current"] = None
+    return payload
 
 
 async def mdp_finalize(db: AsyncSession, session: GameSession, placement: dict[str, int]) -> dict:
