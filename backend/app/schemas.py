@@ -26,6 +26,33 @@ class TeamUpdate(BaseModel):
     name: str | None = None
     color: str | None = None
     member_count: int | None = None
+    score_total: int | None = None
+
+
+class ScoreAdjust(BaseModel):
+    team_id: UUID
+    delta: int
+
+
+class BoardDisplay(BaseModel):
+    mode: str = "simple"
+    title: str = ""
+    subtitle: str = ""
+    question: str = ""
+    category: str = ""
+    level: str | None = None
+    options: list[str] = []
+    show_options: bool = False
+    show_answer: bool = False
+    answer: str = ""
+    team_name: str = ""
+    team_color: str = ""
+    player_label: str = ""
+    word: str = ""
+    words_found: int = 0
+    timer_sec: int | None = None
+    timer_running: bool = False
+    feedback: str = ""
 
 
 class ScoringUpdate(BaseModel):
@@ -45,6 +72,10 @@ class DccQuestionCreate(BaseModel):
     carre_correct: int
     cash_answer: str
     cash_aliases: list[str] = []
+
+
+class MdpWordsCreate(BaseModel):
+    words: list[str] = Field(min_length=1)
 
 
 class DccChooseRequest(BaseModel):

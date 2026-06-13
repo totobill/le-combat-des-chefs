@@ -6,7 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import ChipItem, DccQuestion, EventState, GameSession, MdpWord, ParolesTrack, Team
-from app.services.game import apply_placement_points, get_scoring_map, update_ranks
+from app.services.game import (
+    apply_placement_points,
+    get_scoring_map,
+    record_module_points,
+    update_ranks,
+)
 
 
 async def get_event_state(db: AsyncSession, session: GameSession) -> EventState:
@@ -134,6 +139,7 @@ async def dcc_reveal_and_score(db: AsyncSession, session: GameSession) -> dict:
         earned = pts if correct else 0
         if team_id in teams:
             teams[team_id].score_total += earned
+            record_module_points(es.state, "dcc", team_id, earned)
         results[team_id] = {
             "mode": mode,
             "correct": correct,
@@ -157,6 +163,17 @@ async def dcc_reveal_and_score(db: AsyncSession, session: GameSession) -> dict:
     }
     es.state = {**es.state, "dcc": dcc}
     await update_ranks(db, session.id)
+    return dcc
+
+
+async def dcc_finalize(db: AsyncSession, session: GameSession, placement: dict[str, int]) -> dict:
+    await apply_placement_points(db, session, "dcc", placement)
+    await update_ranks(db, session.id)
+    es = await get_event_state(db, session)
+    dcc = es.state.get("dcc", {})
+    dcc["finalized"] = True
+    dcc["episode_placement"] = placement
+    es.state = {**es.state, "dcc": dcc}
     return dcc
 
 
@@ -279,16 +296,28 @@ async def mdp_end_turn(db: AsyncSession, session: GameSession) -> dict:
 
     team_id = current["team_id"]
     found = current.get("words_found", 0)
+    scoring = await get_scoring_map(db, session.id)
+    ppw = int(scoring.get("mdp", {}).get("points_per_word", 2))
+    points_earned = found * ppw
+    team_result = await db.execute(select(Team).where(Team.id == uuid.UUID(team_id)))
+    team = team_result.scalar_one_or_none()
+    if team:
+        team.score_total += points_earned
+        record_module_points(es.state, "mdp", team_id, points_earned)
     mdp["team_scores"].setdefault(team_id, [])
-    mdp["team_scores"][team_id].append({"player": current["player_index"], "words": found})
+    mdp["team_scores"][team_id].append(
+        {"player": current["player_index"], "words": found, "points": points_earned}
+    )
     mdp["last_turn"] = {
         "team_id": team_id,
         "player_index": current["player_index"],
         "words_found": found,
+        "points_earned": points_earned,
         "ended_at": _mdp_now_iso(),
     }
     mdp["current"] = None
     es.state = {**es.state, "mdp": mdp}
+    await update_ranks(db, session.id)
     return mdp
 
 
@@ -433,6 +462,7 @@ async def paroles_score(db: AsyncSession, session: GameSession) -> dict:
                 score += ppw
         if team_id in teams:
             teams[team_id].score_total += score
+            record_module_points(es.state, "paroles", team_id, score)
         results[team_id] = {"score": score, "answers": answers}
     paroles["revealed"] = True
     paroles["phase"] = "done"
@@ -478,20 +508,36 @@ async def chips_score_team(
     es = await get_event_state(db, session)
     chips = es.state.get("chips", {})
     scoring = await get_scoring_map(db, session.id)
-    malus = scoring.get("chips", {}).get("malus_per_wrong", 1)
-    correct_pts = len(correct_flavors)
+    chips_cfg = scoring.get("chips", {})
+    malus = chips_cfg.get("malus_per_wrong", 1)
+    ppc = chips_cfg.get("points_per_correct", 1)
+    correct_pts = len(correct_flavors) * int(ppc)
     penalty = wrong_count * malus
     net = max(0, correct_pts - penalty)
     result = await db.execute(select(Team).where(Team.id == uuid.UUID(team_id)))
     team = result.scalar_one()
     team.score_total += net
+    record_module_points(es.state, "chips", team_id, net)
     chips.setdefault("results", {})[team_id] = {
         "correct": correct_flavors,
         "wrong_count": wrong_count,
+        "correct_points": correct_pts,
+        "penalty": penalty,
         "points": net,
     }
     es.state = {**es.state, "chips": chips}
     await update_ranks(db, session.id)
+    return chips
+
+
+async def chips_finalize(db: AsyncSession, session: GameSession, placement: dict[str, int]) -> dict:
+    await apply_placement_points(db, session, "chips", placement)
+    await update_ranks(db, session.id)
+    es = await get_event_state(db, session)
+    chips = es.state.get("chips", {})
+    chips["finalized"] = True
+    chips["episode_placement"] = placement
+    es.state = {**es.state, "chips": chips}
     return chips
 
 

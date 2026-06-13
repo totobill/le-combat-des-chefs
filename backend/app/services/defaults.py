@@ -1,7 +1,11 @@
 DEFAULT_SCORING = {
-    "mdp": {"placement": {"1": 20, "2": 12, "3": 6}},
-    "dcc": {"duo": 1, "carre": 3, "cash": 6},
-    "chips": {"placement": {"1": 15, "2": 10, "3": 5}, "malus_per_wrong": 1},
+    "mdp": {"points_per_word": 2, "placement": {"1": 20, "2": 12, "3": 6}},
+    "dcc": {"duo": 1, "carre": 3, "cash": 6, "placement": {"1": 10, "2": 6, "3": 3}},
+    "chips": {
+        "points_per_correct": 1,
+        "placement": {"1": 15, "2": 10, "3": 5},
+        "malus_per_wrong": 1,
+    },
     "molkky": {"placement": {"1": 25, "2": 15, "3": 8}},
     "paroles": {"points_per_word": 1},
     "piscine": {"placement": {"1": 20, "2": 12, "3": 6}},

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { GameService } from '../../core/game.service';
 import { Team } from '../../core/models';
@@ -23,12 +23,18 @@ export class JoinComponent implements OnInit {
     private game: GameService,
     private auth: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   async ngOnInit(): Promise<void> {
     const s = await this.game.refreshPublic();
     this.teams = s.teams;
-    if (this.teams.length) this.selectedTeamId = this.teams[0].id;
+    const teamParam = this.route.snapshot.queryParamMap.get('team');
+    if (teamParam && this.teams.some((t) => t.id === teamParam)) {
+      this.selectedTeamId = teamParam;
+    } else if (this.teams.length) {
+      this.selectedTeamId = this.teams[0].id;
+    }
   }
 
   async submit(): Promise<void> {

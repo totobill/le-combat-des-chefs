@@ -63,4 +63,8 @@ export class GameService {
   apiGet<T>(path: string): Promise<T> {
     return firstValueFrom(this.http.get<T>(`${environment.apiUrl}/game${path}`));
   }
+
+  apiDelete<T>(path: string): Promise<T> {
+    return firstValueFrom(this.http.delete<T>(`${environment.apiUrl}/game${path}`));
+  }
 }

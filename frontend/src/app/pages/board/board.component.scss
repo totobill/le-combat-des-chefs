@@ -36,6 +36,194 @@ header {
   }
 }
 
+.question-banner {
+  margin-bottom: 28px;
+  text-align: center;
+  padding: 28px 32px;
+  border-color: rgba(196, 92, 38, 0.35);
+  background: linear-gradient(135deg, rgba(196, 92, 38, 0.12), transparent);
+
+  .q-cat {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+
+  .q-text {
+    font-size: clamp(22px, 4vw, 36px);
+    line-height: 1.25;
+  }
+}
+
+.game-screen {
+  margin-bottom: 24px;
+  text-align: center;
+  padding: 32px 40px;
+}
+
+.game-label {
+  font-size: 20px;
+  color: var(--primary);
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.dcc-screen {
+  border-color: rgba(196, 92, 38, 0.4);
+  background: linear-gradient(180deg, rgba(196, 92, 38, 0.15), transparent);
+
+  .q-text {
+    font-size: clamp(24px, 4.5vw, 42px);
+    line-height: 1.2;
+    margin: 16px 0 24px;
+  }
+}
+
+.team-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 20px;
+  border: 2px solid;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.level-badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.badge-duo {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--duo);
+  }
+
+  &.badge-carre {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--carre);
+  }
+
+  &.badge-cash {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--cash);
+  }
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 700px;
+  margin: 0 auto;
+
+  &.duo {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 500px;
+  }
+}
+
+.opt-pill {
+  padding: 16px 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: clamp(16px, 2.5vw, 24px);
+}
+
+.cash-hint {
+  font-size: 28px;
+  color: var(--cash);
+  margin: 20px 0;
+}
+
+.answer-reveal {
+  margin-top: 24px;
+  font-size: clamp(28px, 5vw, 48px);
+  color: var(--success);
+}
+
+.feedback {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: var(--radius-sm);
+  font-size: 18px;
+  display: inline-block;
+}
+
+.mdp-screen {
+  border-color: rgba(196, 92, 38, 0.5);
+  background: radial-gradient(circle at center, rgba(196, 92, 38, 0.2), transparent 70%);
+}
+
+.mdp-meta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  font-size: 18px;
+  margin-bottom: 16px;
+
+  .team-tag {
+    font-weight: 700;
+  }
+
+  .player-tag {
+    color: var(--muted);
+  }
+}
+
+.mdp-word {
+  font-size: clamp(48px, 10vw, 96px);
+  line-height: 1;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 24px 0;
+  text-shadow: 0 4px 24px rgba(196, 92, 38, 0.4);
+}
+
+.mdp-stats {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  align-items: center;
+}
+
+.mdp-timer {
+  font-size: 72px;
+  color: var(--primary);
+
+  &.urgent {
+    color: var(--danger);
+    animation: pulse 1s infinite;
+  }
+}
+
+.mdp-found {
+  font-size: 36px;
+  color: var(--success);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.board.game-mode {
+  .podium.compact,
+  .score-table.compact {
+    transform: scale(0.92);
+    transform-origin: top center;
+  }
+}
+
 .podium {
   display: flex;
   align-items: flex-end;

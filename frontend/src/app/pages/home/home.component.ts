@@ -17,6 +17,6 @@ export class HomeComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     const s = await this.game.refreshPublic();
-    this.teams = s.teams;
+    this.teams = [...s.teams].sort((a, b) => b.score_total - a.score_total);
   }
 }

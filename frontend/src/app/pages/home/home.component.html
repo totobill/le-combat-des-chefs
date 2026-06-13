@@ -1,35 +1,33 @@
 <div class="page-center home">
-  <img class="home-logo-img" src="icons/icon-192.png" alt="Adwise Survivor — Le Combat des Chefs" width="160" height="160" />
+  <img class="home-logo-img" src="icons/icon-192.png" alt="Adwise Survivor" width="140" height="140" />
   <h1 class="font-bebas title">ADWISE <span>SURVIVOR</span></h1>
   <p class="tagline font-bebas">Le Combat des Chefs</p>
-  <p class="subtitle">Séminaire · Épreuves · Classement live</p>
 
-  <div class="grid-cards">
-    <a routerLink="/admin/login" class="nav-card">
-      <div class="icon">⚙️</div>
-      <div class="font-bebas card-title">Admin</div>
-      <div class="desc">Équipes, barèmes, contenu</div>
-    </a>
-    <a routerLink="/host" class="nav-card">
+  <div class="primary-cards">
+    <a routerLink="/host" class="nav-card primary">
       <div class="icon">🎙️</div>
       <div class="font-bebas card-title">Animateur</div>
-      <div class="desc">Lancer les épreuves</div>
+      <div class="desc">Scores · Questions · Pilotage</div>
     </a>
-    <a routerLink="/board" class="nav-card">
+    <a routerLink="/board" target="_blank" class="nav-card primary">
       <div class="icon">🏆</div>
       <div class="font-bebas card-title">Grand écran</div>
-      <div class="desc">Classement en direct</div>
+      <div class="desc">Classement &amp; questions en direct</div>
     </a>
-    <a routerLink="/join" class="nav-card">
-      <div class="icon">📱</div>
-      <div class="font-bebas card-title">Rejoindre</div>
-      <div class="desc">Équipe · Téléphone</div>
+  </div>
+
+  <div class="secondary-cards">
+    <a routerLink="/admin/login" class="nav-card small">
+      <span>⚙️ Admin</span>
+    </a>
+    <a routerLink="/join" class="nav-card small">
+      <span>📱 Équipes</span>
     </a>
   </div>
 
   @if (teams.length) {
     <div class="teams-preview card">
-      <div class="font-bebas section-title">Équipes</div>
+      <div class="font-bebas section-title">Classement actuel</div>
       <div class="team-row">
         @for (t of teams; track t.id) {
           <span class="team-pill" [style.borderColor]="t.color">

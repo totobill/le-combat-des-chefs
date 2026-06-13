@@ -1,192 +1,204 @@
 <div class="page host">
   <header class="top">
-    <h1 class="font-bebas">ANIMATEUR</h1>
+    <div>
+      <h1 class="font-bebas">ANIMATEUR</h1>
+      <p class="hint">Scores · Jeux live · Grand écran</p>
+    </div>
     <div class="actions">
-      <a routerLink="/board" class="btn btn-ghost">Grand écran</a>
-      <a routerLink="/admin" class="btn btn-ghost">Admin</a>
+      <a routerLink="/board" target="_blank" class="btn btn-primary">▶ Grand écran</a>
+      <button class="btn btn-ghost btn-sm" (click)="clearBoard()">Effacer TV</button>
+      <button class="btn btn-ghost" (click)="auth.logout()">Déconnexion</button>
     </div>
   </header>
 
-  <nav class="mod-nav">
-    @for (m of ['mdp','dcc','chips','molkky','paroles','piscine','poignards']; track m) {
-      <button [class.active]="module() === m" (click)="module.set(m)">{{ m }}</button>
-    }
-  </nav>
-
-  <aside class="scores card">
+  <aside class="live-bar card">
     @for (t of teams; track t.id) {
-      <div class="sb-row">
-        <span [style.color]="t.color">{{ t.name }}</span>
-        <span class="font-bebas" [style.color]="t.color">{{ t.score_total }}</span>
+      <div class="live-team">
+        <span class="dot" [style.background]="t.color"></span>
+        <span class="name">{{ t.name }}</span>
+        <span class="font-bebas score" [style.color]="t.color">{{ t.score_total }}</span>
       </div>
     }
   </aside>
 
-  <main class="main">
-    @if (module() === 'dcc') {
-      <section class="card">
-        <h2 class="font-bebas">Duo / Carré / Cash</h2>
-        <p class="hint">Les équipes choisissent leur niveau puis répondent sur leur téléphone.</p>
-        <button class="btn btn-primary btn-lg" (click)="dccStart()">Nouvelle question</button>
-        <button class="btn btn-success btn-lg" (click)="dccReveal()">Révéler &amp; scorer</button>
-        @if (dccState()['question']) {
-          <div class="q-display font-bebas">{{ dccState()['question'] }}</div>
-          <p>Phase : {{ dccState()['phase'] }}</p>
-          <pre class="debug">{{ dccState() | json }}</pre>
-        }
-      </section>
-    }
+  <nav class="tabs">
+    <button [class.active]="tab() === 'scores'" (click)="tab.set('scores')">Scores</button>
+    <button [class.active]="tab() === 'dcc'" (click)="tab.set('dcc')">Duo / Carré / Cash</button>
+    <button [class.active]="tab() === 'mdp'" (click)="tab.set('mdp')">Mot de Passe</button>
+    <button [class.active]="tab() === 'questions'" (click)="tab.set('questions')">Banque Q.</button>
+    <button [class.active]="tab() === 'teams'" (click)="tab.set('teams')">Équipes</button>
+  </nav>
 
-    @if (module() === 'mdp') {
-      <section class="card">
-        <h2 class="font-bebas">Mot de Passe</h2>
-        <p class="hint">
-          30 s par joueur · Mot trouvé = tap sur l'écran · Fin du chrono = pause ·
-          <strong>L'animateur relance</strong> le joueur suivant.
-        </p>
-
-        @if (mdpCurrent()) {
-          <div class="mdp-live card">
-            <div class="font-bebas mdp-timer">{{ mdpCurrent()!['remaining_sec'] }}s</div>
-            <p>
-              En cours :
-              <strong>{{ teamNameById($any(mdpCurrent())['team_id']) }}</strong>
-              · Joueur {{ ($any(mdpCurrent())['player_index'] ?? 0) + 1 }}
-              · {{ mdpCurrent()!['words_found'] }} mot(s)
-            </p>
-            <button class="btn btn-danger btn-sm" (click)="mdpForceEnd()">Arrêter le passage</button>
+  @if (tab() === 'scores') {
+    <section class="card panel">
+      <h2 class="font-bebas">Saisie des scores</h2>
+      <p class="hint">Entrée ou clic hors du champ pour enregistrer.</p>
+      @for (t of teams; track t.id) {
+        <div class="score-row" [style.borderLeftColor]="t.color">
+          <div class="team-info">
+            <span class="font-bebas team-name" [style.color]="t.color">{{ t.name }}</span>
+            <div class="score-input-row">
+              <input type="number" [(ngModel)]="t.score_total" min="0" class="score-input"
+                (blur)="setScore(t)" (keyup.enter)="setScore(t)" />
+              <button class="btn btn-ghost btn-sm" (click)="setScore(t)">OK</button>
+            </div>
           </div>
-        } @else if (mdpLastTurn()) {
-          <div class="mdp-done">
-            Passage terminé —
-            <strong>{{ teamNameById($any(mdpLastTurn())['team_id']) }}</strong>
-            joueur {{ ($any(mdpLastTurn())['player_index'] ?? 0) + 1 }} :
-            <strong>{{ mdpLastTurn()!['words_found'] }} mot(s)</strong>.
-            Placez le prochain joueur puis lancez.
+          <div class="quick-btns">
+            <button class="btn btn-ghost btn-sm" (click)="adjustScore(t.id, -5)">−5</button>
+            <button class="btn btn-ghost btn-sm" (click)="adjustScore(t.id, -1)">−1</button>
+            <button class="btn btn-success btn-sm" (click)="adjustScore(t.id, 1)">+1</button>
+            <button class="btn btn-success btn-sm" (click)="adjustScore(t.id, 5)">+5</button>
+            <button class="btn btn-success btn-sm" (click)="adjustScore(t.id, 10)">+10</button>
           </div>
-        }
-
-        <div class="row">
-          <select [(ngModel)]="mdpTeamId">
-            @for (t of teams; track t.id) {
-              <option [value]="t.id">{{ t.name }}</option>
-            }
-          </select>
-          <label class="player-label">Joueur n°</label>
-          <input type="number" [(ngModel)]="mdpPlayerIndex" min="0" max="4" class="num" />
-          <button class="btn btn-primary btn-lg" [disabled]="!mdpCanStart()" (click)="mdpStartTurn()">
-            {{ mdpCanStart() ? '▶ Lancer le passage (30 s)' : 'Passage en cours…' }}
-          </button>
         </div>
-        @if (mdpError) {
-          <p class="error">{{ mdpError }}</p>
+      }
+      <button class="btn btn-danger reset-all" (click)="resetAllScores()">Réinitialiser tous les scores</button>
+    </section>
+  }
+
+  @if (tab() === 'dcc') {
+    <section class="card panel game-panel">
+      <h2 class="font-bebas">Duo · Carré · Cash</h2>
+      <p class="hint">Vous présentez, vous validez. La bonne réponse reste visible ici, pas sur la TV tant que vous ne révélez pas.</p>
+
+      <label>Question</label>
+      <select [(ngModel)]="dccQuestionId">
+        @for (q of questions; track q.id) {
+          <option [value]="q.id">{{ q.category }} — {{ q.question }}</option>
         }
-        <h3>Classement épreuve (1/2/3)</h3>
+      </select>
+
+      @if (activeDccQuestion(); as q) {
+        <div class="host-answer card">
+          <strong>Réponses (animateur seulement)</strong>
+          <p>Duo : {{ q.duo_opts[q.duo_correct] }} · Carré : {{ q.carre_opts[q.carre_correct] }} · Cash : {{ q.cash_answer }}</p>
+        </div>
+
+        <button class="btn btn-primary btn-lg" (click)="dccShowQuestion()">1. Afficher la question à l'écran</button>
+
+        <h3 class="sub-title">Par équipe</h3>
         @for (t of teams; track t.id) {
-          <div class="row">
-            <span [style.color]="t.color">{{ t.name }}</span>
-            <select [(ngModel)]="placement[t.id]">
-              <option [ngValue]="1">1er</option>
-              <option [ngValue]="2">2e</option>
-              <option [ngValue]="3">3e</option>
+          <div class="team-game-row" [style.borderLeftColor]="t.color">
+            <span class="font-bebas" [style.color]="t.color">{{ t.name }}</span>
+            <select [(ngModel)]="dccTeamLevels[t.id]" class="level-select">
+              <option value="duo">Duo ({{ scoring.dcc.duo }} pt)</option>
+              <option value="carre">Carré ({{ scoring.dcc.carre }} pts)</option>
+              <option value="cash">Cash ({{ scoring.dcc.cash }} pts)</option>
             </select>
+            <button class="btn btn-ghost btn-sm" (click)="dccShowChoices(t)">Montrer choix TV</button>
+            <button class="btn btn-success btn-sm" (click)="dccValidate(t, true)">✓ Bonne</button>
+            <button class="btn btn-danger btn-sm" (click)="dccValidate(t, false)">✗ Mauvaise</button>
           </div>
         }
-        <button class="btn btn-success" (click)="mdpFinalize()">Valider classement MDP</button>
-      </section>
-    }
 
-    @if (module() === 'paroles') {
-      <section class="card">
-        <h2 class="font-bebas">N'oubliez pas les paroles</h2>
-        <button class="btn btn-primary" (click)="parolesStart()">Nouvelle musique</button>
-        <button class="btn btn-ghost" (click)="parolesListen()">Arrêter / 2e écoute</button>
-        <button class="btn btn-success" (click)="parolesScore()">Corriger &amp; scorer</button>
-        @if (parolesState()['title']) {
-          <p class="font-bebas q-display">{{ parolesState()['title'] }}</p>
-          <p>{{ parolesState()['display_text'] }}</p>
-        }
-      </section>
-    }
+        <button class="btn btn-ghost" (click)="dccRevealAnswer()">Révéler la bonne réponse à l'écran</button>
+      }
+    </section>
+  }
 
-    @if (module() === 'chips') {
-      <section class="card">
-        <h2 class="font-bebas">Chips</h2>
-        <select [(ngModel)]="selectedChipId">
-          @for (c of chips; track c.id) {
-            <option [value]="c.id">{{ c.name }} — {{ c.flavors.join(', ') }}</option>
+  @if (tab() === 'mdp') {
+    <section class="card panel game-panel">
+      <h2 class="font-bebas">Mot de Passe</h2>
+      <p class="hint">Le mot s'affiche sur le grand écran. Vous validez chaque mot trouvé (+{{ scoring.mdp.points_per_word }} pt).</p>
+
+      <div class="row">
+        <select [(ngModel)]="mdpTeamId">
+          @for (t of teams; track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
           }
         </select>
-        <input [(ngModel)]="flavorsToGuess" placeholder="Goûts à faire deviner (séparés par virgule)" />
-        <button class="btn btn-primary" (click)="chipsStart()">Lancer dégustation</button>
-        @for (t of teams; track t.id) {
-          <div class="row chips-score">
-            <span [style.color]="t.color">{{ t.name }}</span>
-            <input #correct placeholder="Goûts trouvés (virgules)" />
-            <input #wrong type="number" placeholder="Malus" value="0" class="num" />
-            <button class="btn btn-success btn-sm" (click)="chipsScoreTeam(t.id, correct.value, +wrong.value)">OK</button>
-          </div>
-        }
-      </section>
-    }
+        <label>Joueur n°</label>
+        <input type="number" [(ngModel)]="mdpPlayerIndex" min="1" max="6" class="num" />
+      </div>
 
-    @if (module() === 'molkky') {
-      <section class="card">
-        <h2 class="font-bebas">Mölkky</h2>
-        <p class="hint">Saisissez le classement en fin de match (pas de saisie équipe).</p>
-        @for (t of teams; track t.id) {
-          <div class="row">
-            <span [style.color]="t.color">{{ t.name }}</span>
-            <select [(ngModel)]="piscinePlacement[t.id]">
-              <option [ngValue]="1">1er</option>
-              <option [ngValue]="2">2e</option>
-              <option [ngValue]="3">3e</option>
-            </select>
-          </div>
-        }
-        <button class="btn btn-success" (click)="molkkyResult()">Valider résultat Mölkky</button>
-      </section>
-    }
+      <div class="row">
+        <select [(ngModel)]="mdpWordId" class="flex-grow">
+          @for (w of mdpWords; track w.id) {
+            <option [value]="w.id">{{ w.word }}</option>
+          }
+        </select>
+        <button class="btn btn-ghost btn-sm" (click)="mdpPickRandomWord()">Aléatoire</button>
+      </div>
 
-    @if (module() === 'piscine') {
-      <section class="card">
-        <h2 class="font-bebas">Piscine — Relais</h2>
-        @for (t of teams; track t.id) {
-          <div class="row">
-            <span [style.color]="t.color">{{ t.name }}</span>
-            <select [(ngModel)]="piscinePlacement[t.id]">
-              <option [ngValue]="1">1er</option>
-              <option [ngValue]="2">2e</option>
-              <option [ngValue]="3">3e</option>
-            </select>
-          </div>
-        }
-        <button class="btn btn-success" (click)="piscineResult()">Valider résultat Piscine</button>
-      </section>
-    }
+      @if (mdpRunning) {
+        <div class="mdp-live">
+          <span class="font-bebas timer">{{ mdpTimerSec }}s</span>
+          <span>{{ mdpWordsFound }} mot(s) · {{ activeMdpWord()?.word }}</span>
+        </div>
+      }
 
-    @if (module() === 'poignards') {
-      <section class="card">
-        <h2 class="font-bebas">Épreuve des poignards</h2>
-        <button class="btn btn-primary btn-lg" (click)="poignardsStart()">Afficher handicaps temps</button>
-        @if (poignardsState()['ranking']) {
-          <div class="poignards-list">
-            @for (r of $any(poignardsState()['ranking']); track r.team_id) {
-              <div class="poignard-row" [style.borderColor]="r.color">
-                <span class="font-bebas rank">{{ r.rank }}.</span>
-                <span>{{ r.name }}</span>
-                <span class="handicap">
-                  @if (r.handicap_seconds === 0) {
-                    Départ immédiat
-                  } @else {
-                    +{{ r.handicap_seconds }} s de retard
-                  }
-                </span>
-              </div>
+      <div class="action-row">
+        <button class="btn btn-primary btn-lg" (click)="mdpStartTurn()" [disabled]="mdpRunning">▶ Lancer (30 s)</button>
+        <button class="btn btn-success btn-lg" (click)="mdpWordFound()" [disabled]="!mdpRunning && mdpTimerSec <= 0">+ Mot trouvé</button>
+        <button class="btn btn-danger" (click)="mdpEndTurn()">Fin du passage</button>
+      </div>
+    </section>
+  }
+
+  @if (tab() === 'questions') {
+    <section class="card panel">
+      <div class="panel-head">
+        <h2 class="font-bebas">Banque de questions</h2>
+        <button class="btn btn-primary btn-sm" (click)="showAddQuestion = !showAddQuestion">
+          {{ showAddQuestion ? 'Annuler' : '+ Ajouter' }}
+        </button>
+      </div>
+
+      @if (showAddQuestion) {
+        <div class="add-form card">
+          <label>Question</label>
+          <input [(ngModel)]="newQuestion.question" />
+          <label>Catégorie</label>
+          <input [(ngModel)]="newQuestion.category" />
+          <div class="form-grid">
+            <div>
+              <label>Duo A / B</label>
+              <input [(ngModel)]="newQuestion.duo_a" placeholder="A" />
+              <input [(ngModel)]="newQuestion.duo_b" placeholder="B" />
+              <select [(ngModel)]="newQuestion.duo_correct">
+                <option [ngValue]="0">Bonne : A</option>
+                <option [ngValue]="1">Bonne : B</option>
+              </select>
+            </div>
+            <div>
+              <label>Carré A–D</label>
+              <input [(ngModel)]="newQuestion.carre_a" placeholder="A" />
+              <input [(ngModel)]="newQuestion.carre_b" placeholder="B" />
+              <input [(ngModel)]="newQuestion.carre_c" placeholder="C" />
+              <input [(ngModel)]="newQuestion.carre_d" placeholder="D" />
+              <input type="number" [(ngModel)]="newQuestion.carre_correct" min="0" max="3" placeholder="Index bonne rép." />
+            </div>
+          </div>
+          <label>Cash</label>
+          <input [(ngModel)]="newQuestion.cash_answer" />
+          <button class="btn btn-primary" (click)="addQuestion()">Enregistrer</button>
+        </div>
+      }
+
+      <div class="q-list">
+        @for (q of questions; track q.id) {
+          <div class="q-item" (click)="toggleQuestion(q.id)">
+            <span class="q-cat">{{ q.category }}</span>
+            <p class="q-text">{{ q.question }}</p>
+            @if (expandedQuestionId === q.id) {
+              <p class="q-detail">Duo: {{ q.duo_opts.join('/') }} · Carré: {{ q.carre_opts.join('·') }} · Cash: {{ q.cash_answer }}</p>
             }
           </div>
         }
-      </section>
-    }
-  </main>
+      </div>
+    </section>
+  }
+
+  @if (tab() === 'teams') {
+    <section class="card panel">
+      <h2 class="font-bebas">Équipes</h2>
+      @for (t of teams; track t.id) {
+        <div class="team-edit row">
+          <input [(ngModel)]="t.name" />
+          <input type="color" [(ngModel)]="t.color" class="color" />
+          <button class="btn btn-primary btn-sm" (click)="saveTeam(t)">Sauver</button>
+        </div>
+      }
+    </section>
+  }
 </div>

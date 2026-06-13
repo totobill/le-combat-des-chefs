@@ -14,13 +14,18 @@ Application d'animation pour séminaire : épreuves, classement live, PWA.
 ## Démarrage local
 
 ```bash
-make help              # liste des commandes
-make install           # dépendances back + front
-make dev               # PostgreSQL dev (port 5433)
-make backend-migrate   # après avoir copié backend/.env.example → backend/.env
-make backend-run       # API :8000
-make frontend-start    # http://localhost:4200
+make dev    # PostgreSQL + API + Angular — http://localhost:4200
 ```
+
+Une seule commande : Docker lance toute la stack. Les modifications dans `frontend/` et `backend/` sont détectées automatiquement (scan toutes les 2 s, sans surcharge navigateur).
+
+```bash
+make dev-down    # arrêter
+make dev-logs    # suivre les logs
+POLL_MS=3000 make dev   # intervalle de scan personnalisé (ms)
+```
+
+> Ne pas utiliser `make prod-up` pour le dev : image figée, pas de hot reload.
 
 ### Production Docker (iMac)
 

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 
 @Component({
@@ -18,6 +18,7 @@ export class AdminLoginComponent {
   constructor(
     private auth: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
   async submit(): Promise<void> {
@@ -25,11 +26,18 @@ export class AdminLoginComponent {
     this.loading = true;
     try {
       await this.auth.loginAdmin(this.password);
-      await this.router.navigate(['/admin']);
+      await this.router.navigateByUrl(this.returnUrl());
     } catch {
       this.error = 'Mot de passe incorrect';
     } finally {
       this.loading = false;
     }
+  }
+
+  private returnUrl(): string {
+    const raw = this.route.snapshot.queryParamMap.get('returnUrl');
+    const path = raw?.split('?')[0] ?? '/admin';
+    if (path === '/admin' || path === '/host') return raw ?? '/admin';
+    return '/admin';
   }
 }

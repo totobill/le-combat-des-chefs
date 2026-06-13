@@ -1,33 +1,77 @@
-<div class="board">
+<div class="board" [class.game-mode]="board">
   <header>
     <div class="label">CLASSEMENT EN DIRECT</div>
     <h1 class="font-bebas title">ADWISE <span>SURVIVOR</span></h1>
     <div class="board-sub font-bebas">Le Combat des Chefs</div>
-    @if (currentModule) {
-      <div class="live">● Épreuve : {{ currentModule }}</div>
-    }
   </header>
 
-  @if (currentModule === 'poignards' && poignards.ranking) {
-    <section class="poignards card">
-      <h2 class="font-bebas">FINALE — Handicaps temps</h2>
-      @for (r of poignards.ranking; track r.rank) {
-        <div class="p-row" [style.borderColor]="r.color">
-          <span class="font-bebas rank">{{ r.rank }}.</span>
-          <span class="name" [style.color]="r.color">{{ r.name }}</span>
-          <span class="handicap">
-            @if (r.handicap_seconds === 0) {
-              Départ immédiat 🏁
-            } @else {
-              +{{ r.handicap_seconds }} s
-            }
-          </span>
+  @if (board?.mode === 'dcc') {
+    <section class="game-screen card dcc-screen">
+      <div class="game-label font-bebas">{{ board!.title }}</div>
+      @if (board!.subtitle) {
+        <div class="q-cat">{{ board!.subtitle }}</div>
+      }
+      @if (board!.team_name) {
+        <div class="team-banner" [style.borderColor]="board!.team_color">
+          <span [style.color]="board!.team_color">{{ board!.team_name }}</span>
+          @if (board!.level) {
+            <span class="level-badge badge-{{ board!.level }}">{{ levelLabel(board!.level) }}</span>
+          }
         </div>
+      }
+      <div class="q-text font-bebas">{{ board!.question }}</div>
+
+      @if (board!.show_options && board!.options?.length) {
+        <div class="options-grid" [class.duo]="board!.level === 'duo'">
+          @for (opt of board!.options; track $index) {
+            <div class="opt-pill font-bebas">{{ opt }}</div>
+          }
+        </div>
+      }
+      @if (board!.level === 'cash' && board!.show_options === false && board!.team_name) {
+        <div class="cash-hint font-bebas">Réponse libre</div>
+      }
+      @if (board!.show_answer && board!.answer) {
+        <div class="answer-reveal font-bebas">→ {{ board!.answer }}</div>
+      }
+      @if (board!.feedback) {
+        <div class="feedback">{{ board!.feedback }}</div>
       }
     </section>
   }
 
-  <div class="podium">
+  @if (board?.mode === 'mdp') {
+    <section class="game-screen card mdp-screen">
+      <div class="game-label font-bebas">MOT DE PASSE</div>
+      <div class="mdp-meta">
+        <span class="team-tag" [style.color]="board!.team_color">{{ board!.team_name }}</span>
+        <span class="player-tag">{{ board!.player_label }}</span>
+      </div>
+      @if (board!.word) {
+        <div class="mdp-word font-bebas">{{ board!.word }}</div>
+      }
+      <div class="mdp-stats">
+        @if (board!.timer_running || (board!.timer_sec ?? 0) > 0) {
+          <div class="mdp-timer font-bebas" [class.urgent]="(board!.timer_sec ?? 0) <= 10">
+            {{ board!.timer_sec }}s
+          </div>
+        }
+        <div class="mdp-found font-bebas">{{ board!.words_found ?? 0 }} mot(s)</div>
+      </div>
+      @if (board!.feedback) {
+        <div class="feedback">{{ board!.feedback }}</div>
+      }
+    </section>
+  }
+
+  @if (board?.mode === 'simple' && board!.question) {
+    <section class="question-banner card">
+      @if (board!.subtitle) { <div class="q-cat">{{ board!.subtitle }}</div> }
+      <div class="q-text font-bebas">{{ board!.question }}</div>
+    </section>
+  }
+
+  <div class="podium" [class.compact]="board">
     @for (t of podiumOrder(); track $index) {
       @if (t) {
         <div class="podium-col" [class]="'p' + ($index === 1 ? 1 : $index === 0 ? 2 : 3)">
@@ -39,23 +83,15 @@
     }
   </div>
 
-  <table class="score-table card">
+  <table class="score-table card" [class.compact]="board">
     <thead>
-      <tr>
-        <th>#</th>
-        <th>Équipe</th>
-        <th>Score</th>
-        <th></th>
-      </tr>
+      <tr><th>#</th><th>Équipe</th><th>Score</th><th></th></tr>
     </thead>
     <tbody>
       @for (t of teams; track t.id; let i = $index) {
         <tr>
           <td class="font-bebas rank-cell">{{ i + 1 }}</td>
-          <td>
-            <span class="dot" [style.background]="t.color"></span>
-            {{ t.name }}
-          </td>
+          <td><span class="dot" [style.background]="t.color"></span>{{ t.name }}</td>
           <td class="font-bebas score-cell" [style.color]="t.color">{{ t.score_total }}</td>
           <td class="bar-cell">
             <div class="bar-wrap">
@@ -66,6 +102,4 @@
       }
     </tbody>
   </table>
-
-  <a routerLink="/" class="home-link">combat-des-chefs.lafrenchsphere.fr</a>
 </div>

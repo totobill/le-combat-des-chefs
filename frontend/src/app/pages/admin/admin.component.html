@@ -11,6 +11,8 @@
   <nav class="tabs">
     <button [class.active]="tab() === 'teams'" (click)="tab.set('teams')">Équipes</button>
     <button [class.active]="tab() === 'scoring'" (click)="tab.set('scoring')">Barèmes</button>
+    <button [class.active]="tab() === 'content'" (click)="tab.set('content')">Contenu</button>
+    <button [class.active]="tab() === 'results'" (click)="tab.set('results')">Résultats</button>
     <button [class.active]="tab() === 'links'" (click)="tab.set('links')">Liens</button>
   </nav>
 
@@ -27,30 +29,639 @@
           <div class="score font-bebas" [style.color]="t.color">{{ t.score_total }} pts</div>
         </div>
       }
-      <button class="btn btn-danger" (click)="resetScores()">Reset scores</button>
+      <div class="reset-zone">
+        <button class="btn btn-danger" (click)="resetAllScores()">
+          Réinitialiser tout (scores + épreuves)
+        </button>
+        <p class="hint">Remet les scores à zéro et efface la progression de toutes les épreuves.</p>
+      </div>
     </section>
   }
 
   @if (tab() === 'scoring') {
-    <section>
-      <p class="hint">Modifiez les points 1er/2e/3e ou barèmes jusqu'au dernier moment.</p>
-      <textarea rows="20" [(ngModel)]="scoringJson"></textarea>
-      <div class="mod-btns">
-        @for (m of modules; track m) {
-          <button class="btn btn-ghost" (click)="saveScoringModule(m)">Sauver {{ m }}</button>
-        }
+    <section class="scoring-section">
+      <p class="hint">Ajustez les points par épreuve. Les changements s'appliquent dès la sauvegarde.</p>
+
+      <div class="scoring-layout">
+        <nav class="scoring-nav">
+          @for (m of scoringModules; track m.id) {
+            <button
+              type="button"
+              class="scoring-nav-item"
+              [class.active]="scoringModule() === m.id"
+              (click)="selectScoringModule(m.id)"
+            >
+              <span class="icon">{{ m.icon }}</span>
+              <span class="label">{{ m.label }}</span>
+            </button>
+          }
+        </nav>
+
+        <div class="card scoring-panel">
+          @let mod = scoringModule();
+          @let meta = moduleMeta(mod);
+
+          <header class="scoring-header">
+            <span class="scoring-icon">{{ meta.icon }}</span>
+            <div>
+              <h2 class="font-bebas">{{ meta.label }}</h2>
+              <p class="hint">{{ meta.hint }}</p>
+            </div>
+          </header>
+
+          @if (mod === 'mdp') {
+            <h3 class="sub-title">Pendant l'épreuve</h3>
+            <div class="field-card single">
+              <label>Points par mot trouvé (bonne réponse)</label>
+              <div class="input-with-unit wide">
+                <input type="number" [(ngModel)]="scoring.mdp.points_per_word" min="0" step="1" />
+                <span class="unit">pt / mot</span>
+              </div>
+            </div>
+            <h3 class="sub-title">Classement final</h3>
+            <ng-container *ngTemplateOutlet="placementTpl; context: { $implicit: scoring.mdp.placement }" />
+          }
+
+          @if (mod === 'dcc') {
+            <h3 class="sub-title">Par bonne réponse</h3>
+            <div class="field-grid dcc-grid">
+              <div class="field-card duo">
+                <span class="badge badge-duo">Duo</span>
+                <label>2 choix</label>
+                <div class="input-with-unit">
+                  <input type="number" [(ngModel)]="scoring.dcc.duo" min="0" step="1" />
+                  <span class="unit">pts</span>
+                </div>
+              </div>
+              <div class="field-card carre">
+                <span class="badge badge-carre">Carré</span>
+                <label>4 choix</label>
+                <div class="input-with-unit">
+                  <input type="number" [(ngModel)]="scoring.dcc.carre" min="0" step="1" />
+                  <span class="unit">pts</span>
+                </div>
+              </div>
+              <div class="field-card cash">
+                <span class="badge badge-cash">Cash</span>
+                <label>Saisie libre</label>
+                <div class="input-with-unit">
+                  <input type="number" [(ngModel)]="scoring.dcc.cash" min="0" step="1" />
+                  <span class="unit">pts</span>
+                </div>
+              </div>
+            </div>
+            <h3 class="sub-title">Classement final de l'épreuve</h3>
+            <ng-container *ngTemplateOutlet="placementTpl; context: { $implicit: scoring.dcc.placement }" />
+          }
+
+          @if (mod === 'chips') {
+            <h3 class="sub-title">Par dégustation</h3>
+            <div class="field-card single">
+              <label>Points par bonne saveur devinée</label>
+              <div class="input-with-unit wide">
+                <input type="number" [(ngModel)]="scoring.chips.points_per_correct" min="0" step="1" />
+                <span class="unit">pt / saveur</span>
+              </div>
+            </div>
+            <div class="field-card malus">
+              <label>Malus par mauvaise saveur</label>
+              <div class="input-with-unit wide">
+                <input type="number" [(ngModel)]="scoring.chips.malus_per_wrong" min="0" step="1" />
+                <span class="unit">pt / erreur</span>
+              </div>
+            </div>
+            <h3 class="sub-title">Classement final</h3>
+            <ng-container *ngTemplateOutlet="placementTpl; context: { $implicit: scoring.chips.placement }" />
+          }
+
+          @if (mod === 'paroles') {
+            <div class="field-card single">
+              <label>Points par mot retrouvé</label>
+              <div class="input-with-unit wide">
+                <input type="number" [(ngModel)]="scoring.paroles.points_per_word" min="0" step="1" />
+                <span class="unit">pt / mot</span>
+              </div>
+            </div>
+          }
+
+          @if (mod === 'poignards') {
+            <p class="poignards-note">
+              Les équipes classées 2e et 3e partent avec un retard sur le chrono de l'épreuve finale.
+            </p>
+            <div class="placement-grid handicap">
+              <div class="placement-item gold">
+                <span class="medal">🥇</span>
+                <label>1er au classement</label>
+                <div class="input-with-unit">
+                  <input type="number" [(ngModel)]="scoring.poignards.handicap_seconds['1']" min="0" step="5" />
+                  <span class="unit">sec</span>
+                </div>
+              </div>
+              <div class="placement-item silver">
+                <span class="medal">🥈</span>
+                <label>2e au classement</label>
+                <div class="input-with-unit">
+                  <input type="number" [(ngModel)]="scoring.poignards.handicap_seconds['2']" min="0" step="5" />
+                  <span class="unit">sec</span>
+                </div>
+              </div>
+              <div class="placement-item bronze">
+                <span class="medal">🥉</span>
+                <label>3e au classement</label>
+                <div class="input-with-unit">
+                  <input type="number" [(ngModel)]="scoring.poignards.handicap_seconds['3']" min="0" step="5" />
+                  <span class="unit">sec</span>
+                </div>
+              </div>
+            </div>
+          }
+
+          @if (mod === 'molkky' || mod === 'piscine') {
+            <ng-container *ngTemplateOutlet="placementTpl; context: { $implicit: scoring[mod].placement }" />
+          }
+
+          <footer class="scoring-footer">
+            <button class="btn btn-primary" [disabled]="savingScoring()" (click)="saveScoringModule()">
+              {{ savingScoring() ? 'Enregistrement…' : 'Enregistrer ' + meta.label }}
+            </button>
+            @if (scoringSaved()) {
+              <span class="save-ok">✓ Barème enregistré</span>
+            }
+          </footer>
+        </div>
+      </div>
+    </section>
+  }
+
+  @if (tab() === 'content') {
+    <section class="content-section">
+      <p class="hint">Mots et questions utilisés par l'animateur pendant les épreuves.</p>
+
+      <nav class="content-tabs">
+        <button [class.active]="contentTab() === 'mdp'" (click)="contentTab.set('mdp')">🎭 Mot de Passe</button>
+        <button [class.active]="contentTab() === 'dcc'" (click)="contentTab.set('dcc')">🎯 Duo / Carré / Cash</button>
+      </nav>
+
+      @if (contentTab() === 'mdp') {
+        <div class="card content-card">
+          <h2 class="font-bebas">Mots — Mot de Passe</h2>
+
+          <div class="content-add-block">
+            <div class="add-row">
+              <input [(ngModel)]="newMdpWord" placeholder="Un mot (ex. spatule)" (keyup.enter)="addMdpWord()" />
+              <button class="btn btn-primary" (click)="addMdpWord()">Ajouter</button>
+            </div>
+
+            <label class="field-label">Import en masse (un mot par ligne)</label>
+            <textarea [(ngModel)]="newMdpBulk" rows="4" placeholder="ordinateur&#10;spatule&#10;parapluie"></textarea>
+            <button type="button" class="btn btn-ghost content-import-btn" (click)="addMdpBulk()">Importer la liste</button>
+          </div>
+
+          <div class="content-list-block">
+            <h3 class="content-list-title">{{ mdpWords.length }} mot(s)</h3>
+            <div class="word-grid">
+              @for (w of mdpWords; track w.id) {
+                <div class="word-chip" [class.used]="w.used">
+                  <span>{{ w.word }}</span>
+                  @if (w.used) { <span class="tag">joué</span> }
+                  <button type="button" class="del" (click)="deleteMdpWord(w.id)" title="Supprimer">×</button>
+                </div>
+              }
+              @if (!mdpWords.length) {
+                <p class="hint">Aucun mot — ajoutez-en ci-dessus.</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (contentTab() === 'dcc') {
+        <div class="card content-card">
+          <h2 class="font-bebas">Questions — Duo / Carré / Cash</h2>
+
+          <div class="add-form">
+            <label>Question</label>
+            <input [(ngModel)]="newDccQuestion.question" placeholder="Texte de la question" />
+
+            <label>Catégorie</label>
+            <input [(ngModel)]="newDccQuestion.category" />
+
+            <div class="form-grid">
+              <div>
+                <label>Duo — 2 choix</label>
+                <input [(ngModel)]="newDccQuestion.duo_a" placeholder="Choix A" />
+                <input [(ngModel)]="newDccQuestion.duo_b" placeholder="Choix B" />
+                <label>Bonne réponse</label>
+                <select [(ngModel)]="newDccQuestion.duo_correct">
+                  <option [ngValue]="0">A</option>
+                  <option [ngValue]="1">B</option>
+                </select>
+              </div>
+              <div>
+                <label>Carré — 4 choix</label>
+                <input [(ngModel)]="newDccQuestion.carre_a" placeholder="A" />
+                <input [(ngModel)]="newDccQuestion.carre_b" placeholder="B" />
+                <input [(ngModel)]="newDccQuestion.carre_c" placeholder="C" />
+                <input [(ngModel)]="newDccQuestion.carre_d" placeholder="D" />
+                <label>Bonne réponse (0=A, 1=B, 2=C, 3=D)</label>
+                <input type="number" [(ngModel)]="newDccQuestion.carre_correct" min="0" max="3" />
+              </div>
+            </div>
+
+            <label>Réponse Cash (saisie libre)</label>
+            <input [(ngModel)]="newDccQuestion.cash_answer" />
+
+            <button type="button" class="btn btn-primary" (click)="addDccQuestion()">Enregistrer la question</button>
+          </div>
+
+          <div class="content-list-block">
+            <h3 class="content-list-title">{{ dccQuestions.length }} question(s)</h3>
+            <div class="q-list">
+              @for (q of dccQuestions; track q.id) {
+                <div class="q-item" [class.used]="q.used">
+                  <div class="q-head">
+                    <span class="q-cat">{{ q.category }}</span>
+                    @if (q.used) { <span class="tag">jouée</span> }
+                    <p class="q-text">{{ q.question }}</p>
+                    <p class="q-answers">
+                      Duo: {{ q.duo_opts.join(' / ') }} → <strong>{{ q.duo_opts[q.duo_correct] }}</strong>
+                      · Carré: {{ q.carre_opts[q.carre_correct] }}
+                      · Cash: {{ q.cash_answer }}
+                    </p>
+                  </div>
+                  <button type="button" class="btn btn-danger btn-sm" (click)="deleteDccQuestion(q.id)">Supprimer</button>
+                </div>
+              }
+              @if (!dccQuestions.length) {
+                <p class="hint">Aucune question.</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (contentSaved()) {
+        <p class="save-ok">✓ Contenu enregistré</p>
+      }
+    </section>
+  }
+
+  @if (tab() === 'results') {
+    <section class="results-section">
+      <div class="results-header card">
+        <div>
+          <p class="hint">Saisie des résultats et suivi en direct</p>
+          @if (currentModule) {
+            <p class="live-module">Module actif : <strong>{{ currentModule }}</strong></p>
+          }
+        </div>
+        <div class="live-scores">
+          @for (t of teams; track t.id) {
+            <div class="live-score-row">
+              <span class="dot" [style.background]="t.color"></span>
+              <span>{{ t.name }}</span>
+              <span class="font-bebas pts" [style.color]="t.color">{{ t.score_total }}</span>
+            </div>
+          }
+          <button class="btn btn-danger btn-sm reset-all-inline" (click)="resetAllScores()">
+            ↺ Tout réinitialiser
+          </button>
+        </div>
+      </div>
+
+      <div class="results-layout">
+        <nav class="scoring-nav">
+          @for (m of resultModules; track m.id) {
+            <button
+              type="button"
+              class="scoring-nav-item"
+              [class.active]="resultModule() === m.id"
+              (click)="resultModule.set(m.id)"
+            >
+              <span class="icon">{{ m.icon }}</span>
+              <span class="label">{{ m.label }}</span>
+            </button>
+          }
+        </nav>
+
+        <div class="card results-panel">
+          @if (resultModule() === 'mdp') {
+            <h2 class="font-bebas">Mot de Passe</h2>
+            @if (mdpCurrent()) {
+              <div class="status-banner playing">
+                En cours — {{ teamName($any(mdpCurrent())['team_id']) }} ·
+                {{ mdpCurrent()!['remaining_sec'] }}s · {{ mdpCurrent()!['words_found'] }} mot(s)
+                <button class="btn btn-danger btn-sm" (click)="mdpForceEnd()">Arrêter</button>
+              </div>
+            } @else if (mdpLastTurn()) {
+              <div class="status-banner done">
+                Dernier passage : {{ teamName($any(mdpLastTurn())['team_id']) }} —
+                {{ mdpLastTurn()!['words_found'] }} mot(s),
+                +{{ mdpLastTurn()!['points_earned'] ?? '?' }} pts
+              </div>
+            }
+
+            @if (mdpTeamScores() | keyvalue; as entries) {
+              @if (entries.length) {
+                <h3 class="sub-title">Suivi des passages</h3>
+                <table class="results-table">
+                  <thead>
+                    <tr><th>Équipe</th><th>Joueur</th><th>Mots</th><th>Pts</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (entry of entries; track entry.key) {
+                      @for (turn of entry.value; track $index) {
+                        <tr>
+                          <td [style.color]="teamColor(entry.key)">{{ teamName(entry.key) }}</td>
+                          <td>#{{ turn.player + 1 }}</td>
+                          <td>{{ turn.words }}</td>
+                          <td class="font-bebas">+{{ turn.points ?? '—' }}</td>
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              }
+            }
+
+            <h3 class="sub-title">Lancer un passage</h3>
+            <div class="row">
+              <select [(ngModel)]="mdpTeamId">
+                @for (t of teams; track t.id) {
+                  <option [value]="t.id">{{ t.name }}</option>
+                }
+              </select>
+              <input type="number" [(ngModel)]="mdpPlayerIndex" min="0" max="4" class="num" placeholder="Joueur" />
+              <button class="btn btn-primary" [disabled]="!mdpCanStart()" (click)="mdpStartTurn()">▶ Lancer 30 s</button>
+            </div>
+            @if (mdpError) { <p class="error">{{ mdpError }}</p> }
+
+            <h3 class="sub-title">Classement final</h3>
+            @for (t of teams; track t.id) {
+              <div class="row placement-row">
+                <span [style.color]="t.color">{{ t.name }}</span>
+                <select [(ngModel)]="placement[t.id]">
+                  <option [ngValue]="1">1er</option>
+                  <option [ngValue]="2">2e</option>
+                  <option [ngValue]="3">3e</option>
+                </select>
+              </div>
+            }
+            <button class="btn btn-success" (click)="mdpFinalize()">Valider classement MDP</button>
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('mdp')">
+              ↺ Réinitialiser Mot de Passe
+            </button>
+          }
+
+          @if (resultModule() === 'dcc') {
+            <h2 class="font-bebas">Duo / Carré / Cash</h2>
+            <p class="hint">Phase : {{ modState('dcc')['phase'] || '—' }}</p>
+            @if (modState('dcc')['question']) {
+              <p class="q-preview font-bebas">{{ modState('dcc')['question'] }}</p>
+            }
+            <div class="action-row">
+              <button class="btn btn-primary" (click)="dccStart()">Nouvelle question</button>
+              <button class="btn btn-success" (click)="dccReveal()">Révéler &amp; scorer</button>
+            </div>
+
+            @if (dccResults() | keyvalue; as dccRes) {
+              @if (dccRes.length) {
+                <h3 class="sub-title">Résultats question</h3>
+                <table class="results-table">
+                  <thead><tr><th>Équipe</th><th>Mode</th><th>Réponse</th><th>Pts</th></tr></thead>
+                  <tbody>
+                    @for (r of dccRes; track r.key) {
+                      <tr>
+                        <td [style.color]="teamColor(r.key)">{{ teamName(r.key) }}</td>
+                        <td><span class="badge badge-{{ r.value.mode }}">{{ r.value.mode }}</span></td>
+                        <td>{{ r.value.correct ? '✓' : '✗' }}</td>
+                        <td class="font-bebas">+{{ r.value.points }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            }
+
+            <h3 class="sub-title">Classement final de l'épreuve</h3>
+            @for (t of teams; track t.id) {
+              <div class="row placement-row">
+                <span [style.color]="t.color">{{ t.name }}</span>
+                <select [(ngModel)]="dccPlacement[t.id]">
+                  <option [ngValue]="1">1er</option>
+                  <option [ngValue]="2">2e</option>
+                  <option [ngValue]="3">3e</option>
+                </select>
+              </div>
+            }
+            <button class="btn btn-success" (click)="dccFinalize()">Valider classement DCC</button>
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('dcc')">
+              ↺ Réinitialiser DCC
+            </button>
+          }
+
+          @if (resultModule() === 'chips') {
+            <h2 class="font-bebas">Chips</h2>
+            <div class="row">
+              <select [(ngModel)]="selectedChipId">
+                @for (c of chips; track c.id) {
+                  <option [value]="c.id">{{ c.name }} — {{ c.flavors.join(', ') }}</option>
+                }
+              </select>
+            </div>
+            <input [(ngModel)]="flavorsToGuess" placeholder="Goûts à deviner (séparés par virgule)" />
+            <button class="btn btn-primary" (click)="chipsStart()">Lancer dégustation</button>
+
+            @if (modState('chips')['chip_name']) {
+              <p class="hint">En cours : {{ modState('chips')['chip_name'] }}</p>
+            }
+
+            <h3 class="sub-title">Saisie par équipe</h3>
+            @for (t of teams; track t.id) {
+              <div class="row chips-row">
+                <span [style.color]="t.color">{{ t.name }}</span>
+                <input [(ngModel)]="chipsInputs[t.id].correct" placeholder="Saveurs trouvées" />
+                <input type="number" [(ngModel)]="chipsInputs[t.id].wrong" min="0" class="num" placeholder="Erreurs" />
+                <button class="btn btn-success btn-sm" (click)="chipsScoreTeam(t.id)">OK</button>
+              </div>
+              @if (chipsResults()[t.id]; as res) {
+                <div class="mini-result">→ +{{ res.points }} pts ({{ res.correct.length }} saveur(s), {{ res.wrong_count }} erreur(s))</div>
+              }
+            }
+
+            <h3 class="sub-title">Classement final</h3>
+            @for (t of teams; track t.id) {
+              <div class="row placement-row">
+                <span [style.color]="t.color">{{ t.name }}</span>
+                <select [(ngModel)]="chipsPlacement[t.id]">
+                  <option [ngValue]="1">1er</option>
+                  <option [ngValue]="2">2e</option>
+                  <option [ngValue]="3">3e</option>
+                </select>
+              </div>
+            }
+            <button class="btn btn-success" (click)="chipsFinalize()">Valider classement Chips</button>
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('chips')">
+              ↺ Réinitialiser Chips
+            </button>
+          }
+
+          @if (resultModule() === 'paroles') {
+            <h2 class="font-bebas">N'oubliez pas les paroles</h2>
+            @if (modState('paroles')['title']) {
+              <p class="q-preview font-bebas">{{ modState('paroles')['title'] }}</p>
+              <p>{{ modState('paroles')['display_text'] }}</p>
+            }
+            <div class="action-row">
+              <button class="btn btn-primary" (click)="parolesStart()">Nouvelle musique</button>
+              <button class="btn btn-ghost" (click)="parolesListen()">2e écoute</button>
+              <button class="btn btn-success" (click)="parolesScore()">Corriger &amp; scorer</button>
+            </div>
+            @if (modState('paroles')['results']; as parRes) {
+              <table class="results-table">
+                <thead><tr><th>Équipe</th><th>Pts</th></tr></thead>
+                <tbody>
+                  @for (entry of $any(parRes) | keyvalue; track entry.key) {
+                    <tr>
+                      <td>{{ teamName($any(entry.key)) }}</td>
+                      <td class="font-bebas">+{{ $any(entry.value).score }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('paroles')">
+              ↺ Réinitialiser Paroles
+            </button>
+          }
+
+          @if (resultModule() === 'molkky') {
+            <h2 class="font-bebas">Mölkky</h2>
+            @for (t of teams; track t.id) {
+              <div class="row placement-row">
+                <span [style.color]="t.color">{{ t.name }}</span>
+                <select [(ngModel)]="placement[t.id]">
+                  <option [ngValue]="1">1er</option>
+                  <option [ngValue]="2">2e</option>
+                  <option [ngValue]="3">3e</option>
+                </select>
+              </div>
+            }
+            <button class="btn btn-success" (click)="molkkyResult()">Valider résultat Mölkky</button>
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('molkky')">
+              ↺ Réinitialiser Mölkky
+            </button>
+          }
+
+          @if (resultModule() === 'piscine') {
+            <h2 class="font-bebas">Piscine — Relais</h2>
+            @for (t of teams; track t.id) {
+              <div class="row placement-row">
+                <span [style.color]="t.color">{{ t.name }}</span>
+                <select [(ngModel)]="placement[t.id]">
+                  <option [ngValue]="1">1er</option>
+                  <option [ngValue]="2">2e</option>
+                  <option [ngValue]="3">3e</option>
+                </select>
+              </div>
+            }
+            <button class="btn btn-success" (click)="piscineResult()">Valider résultat Piscine</button>
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('piscine')">
+              ↺ Réinitialiser Piscine
+            </button>
+          }
+
+          @if (resultModule() === 'poignards') {
+            <h2 class="font-bebas">Épreuve des poignards</h2>
+            <button class="btn btn-primary" (click)="poignardsStart()">Afficher handicaps</button>
+            @if (modState('poignards')['ranking']; as ranking) {
+              <div class="poignards-list">
+                @for (r of $any(ranking); track r.team_id) {
+                  <div class="poignard-row" [style.borderColor]="r.color">
+                    <span class="font-bebas rank">{{ r.rank }}.</span>
+                    <span>{{ r.name }}</span>
+                    <span class="handicap">
+                      @if (r.handicap_seconds === 0) { Départ immédiat }
+                      @else { +{{ r.handicap_seconds }} s }
+                    </span>
+                  </div>
+                }
+              </div>
+            }
+            <button class="btn btn-danger btn-sm module-reset" (click)="resetModule('poignards')">
+              ↺ Réinitialiser Poignards
+            </button>
+          }
+        </div>
       </div>
     </section>
   }
 
   @if (tab() === 'links') {
-    <section class="card">
-      <p><strong>URL publique :</strong> https://combat-des-chefs.lafrenchsphere.fr</p>
-      <p><strong>Rejoindre :</strong> /join</p>
-      <p><strong>Grand écran :</strong> /board</p>
-      <p><strong>Code session :</strong> CHEFS</p>
-      <hr />
-      <p class="hint">QR codes : générez un QR vers /join pour chaque équipe si besoin.</p>
+    <section class="links-section">
+      <div class="card">
+        <h2 class="font-bebas">Liens utiles</h2>
+        <p class="hint">URL de base : <strong>{{ publicUrl }}</strong> · Code session : <strong>{{ sessionCode }}</strong></p>
+
+        <div class="qr-grid">
+          @for (link of linkQrCodes; track link.path) {
+            <div class="qr-card">
+              <p class="qr-label">{{ link.label }}</p>
+              <img [src]="link.dataUrl" [alt]="'QR code ' + link.label" width="200" height="200" />
+              <code class="qr-url">{{ link.url }}</code>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="copyLink(link.url)">Copier le lien</button>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (teamJoinQrs.length) {
+        <div class="card">
+          <h2 class="font-bebas">QR par équipe</h2>
+          <p class="hint">Chaque QR pré-sélectionne l'équipe sur la page Rejoindre.</p>
+          <div class="qr-grid qr-grid-teams">
+            @for (t of teamJoinQrs; track t.teamId) {
+              <div class="qr-card">
+                <p class="qr-label">
+                  <span class="dot" [style.background]="t.color"></span>
+                  {{ t.name }}
+                </p>
+                <img [src]="t.dataUrl" [alt]="'QR ' + t.name" width="160" height="160" />
+                <button type="button" class="btn btn-ghost btn-sm" (click)="copyLink(t.url)">Copier</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
     </section>
   }
 </div>
+
+<ng-template #placementTpl let-plc>
+  <div class="placement-grid">
+    <div class="placement-item gold">
+      <span class="medal">🥇</span>
+      <label>1ère place</label>
+      <div class="input-with-unit">
+        <input type="number" [(ngModel)]="plc['1']" min="0" step="1" />
+        <span class="unit">pts</span>
+      </div>
+    </div>
+    <div class="placement-item silver">
+      <span class="medal">🥈</span>
+      <label>2e place</label>
+      <div class="input-with-unit">
+        <input type="number" [(ngModel)]="plc['2']" min="0" step="1" />
+        <span class="unit">pts</span>
+      </div>
+    </div>
+    <div class="placement-item bronze">
+      <span class="medal">🥉</span>
+      <label>3e place</label>
+      <div class="input-with-unit">
+        <input type="number" [(ngModel)]="plc['3']" min="0" step="1" />
+        <span class="unit">pts</span>
+      </div>
+    </div>
+  </div>
+</ng-template>

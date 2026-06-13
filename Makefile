@@ -3,16 +3,18 @@
 # Usage : make help
 
 .PHONY: help \
-	dev-db-up dev-db-down dev-db-logs \
-	backend-install backend-migrate backend-run \
-	frontend-install frontend-start frontend-build \
+	dev dev-down dev-logs dev-build \
+	backend-install backend-migrate \
+	frontend-install frontend-build \
 	prod-migrate prod-build prod-up prod-down prod-logs prod-health \
-	install dev
+	install
 
-COMPOSE_DEV     := docker compose -f docker-compose.yml
+COMPOSE_DEV     := docker compose -f docker-compose.dev.yml
 COMPOSE_PROD    := docker compose -f docker-compose.prod.yml
+ENV_DEV         ?= .env.dev
 ENV_PROD        ?= .env.prod
 PORT_APP_PROD   ?= 8091
+POLL_MS         ?= 2000
 
 BACKEND_DIR     := backend
 FRONTEND_DIR    := frontend
@@ -20,9 +22,9 @@ FRONTEND_DIR    := frontend
 help: ## Affiche cette aide
 	@grep -E '^[a-zA-Z0-9_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
-# ─── Installation ───────────────────────────────────────────────────────────
+# ─── Installation (hors Docker, optionnel) ───────────────────────────────────
 
-install: backend-install frontend-install ## Installe les dépendances back + front
+install: backend-install frontend-install ## Installe les dépendances back + front (local)
 
 backend-install: ## pip install (backend)
 	cd $(BACKEND_DIR) && python -m pip install -r requirements.txt
@@ -30,30 +32,25 @@ backend-install: ## pip install (backend)
 frontend-install: ## npm ci (frontend)
 	cd $(FRONTEND_DIR) && npm ci
 
-# ─── Développement local ────────────────────────────────────────────────────
+# ─── Développement local (Docker, hot reload) ─────────────────────────────────
 
-dev: dev-db-up ## Lance la BDD dev (PostgreSQL sur 5433)
-	@echo "BDD dev prête. Ensuite :"
-	@echo "  make backend-migrate && make backend-run"
-	@echo "  make frontend-start   → http://localhost:4200"
+dev: ## Stack dev complète — http://localhost:4200 (poll $(POLL_MS)ms)
+	@test -f $(ENV_DEV) || cp .env.dev.example $(ENV_DEV)
+	POLL_MS=$(POLL_MS) $(COMPOSE_DEV) --env-file $(ENV_DEV) up --build
 
-dev-db-up: ## Démarre PostgreSQL dev (port 5433)
-	$(COMPOSE_DEV) up -d
+dev-build: ## Rebuild les images dev sans démarrer
+	@test -f $(ENV_DEV) || cp .env.dev.example $(ENV_DEV)
+	POLL_MS=$(POLL_MS) $(COMPOSE_DEV) --env-file $(ENV_DEV) build
 
-dev-db-down: ## Arrête PostgreSQL dev
-	$(COMPOSE_DEV) down
+dev-down: ## Arrête la stack dev
+	$(COMPOSE_DEV) --env-file $(ENV_DEV) down
 
-dev-db-logs: ## Logs PostgreSQL dev
-	$(COMPOSE_DEV) logs -f db
+dev-logs: ## Logs stack dev
+	$(COMPOSE_DEV) --env-file $(ENV_DEV) logs -f
 
-backend-migrate: ## Alembic upgrade head (DATABASE_URL dans backend/.env)
-	cd $(BACKEND_DIR) && alembic upgrade head
-
-backend-run: ## Uvicorn sur :8000 (reload)
-	cd $(BACKEND_DIR) && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-frontend-start: ## ng serve + proxy API (port 4200)
-	cd $(FRONTEND_DIR) && npm start
+backend-migrate: ## Alembic upgrade head (via conteneur backend dev)
+	@test -f $(ENV_DEV) || cp .env.dev.example $(ENV_DEV)
+	$(COMPOSE_DEV) --env-file $(ENV_DEV) run --rm backend alembic upgrade head
 
 frontend-build: ## Build Angular production
 	cd $(FRONTEND_DIR) && npm run build
