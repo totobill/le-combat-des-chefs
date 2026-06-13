@@ -14,6 +14,12 @@ import {
   ScoringModuleId,
 } from '../../core/scoring-config';
 import { environment } from '../../../environments/environment';
+import {
+  dccExportFromDb,
+  dccImportTemplate,
+  downloadDccJson,
+  parseDccImport,
+} from '../../core/dcc-import';
 
 @Component({
   selector: 'app-admin',
@@ -65,6 +71,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     carre_correct: 0,
     cash_answer: '',
   };
+  dccImportText = '';
+  dccImportError = '';
   contentSaved = signal(false);
 
   publicUrl = environment.publicUrl;
@@ -77,7 +85,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   dccPlacement: Record<string, number> = {};
   chipsPlacement: Record<string, number> = {};
   mdpTeamId = '';
-  mdpPlayerIndex = 0;
+  mdpPlayerName = '';
   mdpHostView: Record<string, unknown> = {};
   mdpError = '';
   chips: { id: string; name: string; flavors: string[] }[] = [];
@@ -294,6 +302,39 @@ export class AdminComponent implements OnInit, OnDestroy {
     await this.loadContent();
   }
 
+  downloadDccTemplate(): void {
+    downloadDccJson(dccImportTemplate(5), 'dcc-questions-template.json');
+  }
+
+  downloadDccExport(): void {
+    const data = dccExportFromDb(this.dccQuestions);
+    downloadDccJson(data, 'dcc-questions-export.json');
+  }
+
+  async importDccBulk(): Promise<void> {
+    this.dccImportError = '';
+    try {
+      const rows = parseDccImport(this.dccImportText);
+      await this.game.apiPost('/dcc/questions/bulk', {
+        questions: rows.map((r) => ({
+          question: r.question,
+          category: r.category,
+          duo_opts: [...r.duo_opts],
+          duo_correct: r.duo_correct,
+          carre_opts: [...r.carre_opts],
+          carre_correct: r.carre_correct,
+          cash_answer: r.cash_answer,
+          cash_aliases: r.cash_aliases,
+        })),
+      });
+      this.dccImportText = '';
+      this.contentSaved.set(true);
+      await this.loadContent();
+    } catch (e) {
+      this.dccImportError = e instanceof Error ? e.message : 'Import impossible';
+    }
+  }
+
   private async buildLinkQrCodes(): Promise<void> {
     const base = environment.publicUrl.replace(/\/$/, '');
     const links = [
@@ -340,7 +381,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     try {
       await this.game.apiPost('/mdp/start-turn', {
         team_id: this.mdpTeamId,
-        player_index: this.mdpPlayerIndex,
+        player_name: this.mdpPlayerName.trim(),
       });
       await this.refreshMdpHost();
     } catch {
@@ -359,7 +400,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   mdpCanStart(): boolean {
-    return this.mdpHostView['can_start'] !== false;
+    return this.mdpHostView['can_join'] !== false && this.mdpHostView['can_start'] !== false;
   }
 
   mdpCurrent(): Record<string, unknown> | null {
@@ -370,8 +411,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     return (this.mdpHostView['last_turn'] as Record<string, unknown>) || null;
   }
 
-  mdpTeamScores(): Record<string, { player: number; words: number; points?: number }[]> {
-    return (this.modState('mdp')['team_scores'] as Record<string, { player: number; words: number; points?: number }[]>) || {};
+  mdpTeamScores(): Record<string, { player: string; words: number; points?: number }[]> {
+    return (this.modState('mdp')['team_scores'] as Record<string, { player: string; words: number; points?: number }[]>) || {};
   }
 
   // ─── DCC ───────────────────────────────────────────────────────

@@ -228,7 +228,7 @@ async def reset_all_scores_and_progress(db: AsyncSession, session: GameSession) 
 
 
 async def adjust_team_score(
-    db: AsyncSession, session: GameSession, team_id: str, delta: int
+    db: AsyncSession, session: GameSession, team_id: str, delta: int, module: str | None = None
 ) -> Team:
     result = await db.execute(
         select(Team).where(Team.id == uuid.UUID(team_id), Team.session_id == session.id)
@@ -239,7 +239,8 @@ async def adjust_team_score(
     team.score_total = max(0, team.score_total + delta)
     es = session.event_state
     if es:
-        record_module_points(es.state, "manual", team_id, max(0, delta))
+        ledger_module = module if module else "manual"
+        record_module_points(es.state, ledger_module, team_id, max(0, delta))
     await update_ranks(db, session.id)
     return team
 

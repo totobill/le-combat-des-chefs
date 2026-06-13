@@ -8,6 +8,32 @@
   margin-bottom: 24px;
 }
 
+.session-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .session-msg {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .session-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+  }
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .form-card {
   width: 100%;
   max-width: 420px;

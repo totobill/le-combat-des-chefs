@@ -18,34 +18,63 @@ export class JoinComponent implements OnInit {
   displayName = '';
   error = '';
   loading = false;
+  showExistingSession = false;
 
   constructor(
     private game: GameService,
-    private auth: AuthService,
+    public auth: AuthService,
     private router: Router,
     private route: ActivatedRoute,
   ) {}
 
   async ngOnInit(): Promise<void> {
+    if (this.route.snapshot.queryParamMap.get('reset') === '1') {
+      this.auth.logout(false);
+    }
+
     const s = await this.game.refreshPublic();
     this.teams = s.teams;
     const teamParam = this.route.snapshot.queryParamMap.get('team');
     if (teamParam && this.teams.some((t) => t.id === teamParam)) {
       this.selectedTeamId = teamParam;
-    } else if (this.teams.length) {
-      this.selectedTeamId = this.teams[0].id;
     }
+
+    this.showExistingSession = this.auth.isTeam();
+  }
+
+  existingTeamName(): string {
+    const tid = this.auth.teamId();
+    return this.teams.find((t) => t.id === tid)?.name ?? 'votre équipe';
+  }
+
+  continueAsCurrent(): void {
+    void this.router.navigate(['/team']);
+  }
+
+  switchPlayer(): void {
+    this.auth.logout(false);
+    this.showExistingSession = false;
+    this.displayName = '';
   }
 
   async submit(): Promise<void> {
     this.error = '';
-    if (!this.selectedTeamId || !this.displayName.trim()) {
-      this.error = 'Choisissez une équipe et entrez votre prénom';
+    if (!this.selectedTeamId) {
+      this.error = 'Choisissez votre équipe';
+      return;
+    }
+    if (!this.displayName.trim()) {
+      this.error = 'Entrez votre prénom';
       return;
     }
     this.loading = true;
     try {
       await this.auth.joinTeam(this.selectedTeamId, this.displayName.trim());
+      try {
+        await this.game.apiPost('/mdp/present');
+      } catch {
+        /* présence MDP optionnelle */
+      }
       await this.router.navigate(['/team']);
     } catch {
       this.error = 'Impossible de rejoindre — vérifiez le code session';

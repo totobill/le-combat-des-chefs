@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { BoardDisplayPayload, isGameOnBoard } from '../../core/board-display';
 import { GameService } from '../../core/game.service';
 import { Team } from '../../core/models';
 
@@ -12,7 +11,6 @@ import { Team } from '../../core/models';
 })
 export class BoardComponent implements OnInit, OnDestroy {
   teams: Team[] = [];
-  board: BoardDisplayPayload | null = null;
   private pollTimer?: ReturnType<typeof setInterval>;
 
   constructor(private game: GameService) {}
@@ -32,19 +30,6 @@ export class BoardComponent implements OnInit, OnDestroy {
     const ws = this.game.state();
     const s = ws ?? (await this.game.refreshPublic());
     this.teams = [...s.teams].sort((a, b) => b.score_total - a.score_total);
-    const raw = s.event.state['board'] as BoardDisplayPayload | undefined;
-    this.board = raw && isGameOnBoard(raw) ? raw : null;
-  }
-
-  showScores(): boolean {
-    return !this.board || this.board.mode === 'scores';
-  }
-
-  levelLabel(level?: string): string {
-    if (level === 'duo') return 'DUO';
-    if (level === 'carre') return 'CARRÉ';
-    if (level === 'cash') return 'CASH';
-    return '';
   }
 
   maxScore(): number {

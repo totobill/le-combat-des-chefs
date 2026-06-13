@@ -61,3 +61,7 @@ async def get_active_session(db: AsyncSession) -> GameSession:
 
 def team_uuid(user: dict) -> UUID:
     return UUID(user["team_id"])
+
+
+def player_id(user: dict) -> str:
+    return str(user.get("player_id") or user.get("sub") or "")

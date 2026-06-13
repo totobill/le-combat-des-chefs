@@ -9,6 +9,7 @@ export interface AuthState {
   role: 'admin' | 'team';
   teamId?: string;
   displayName?: string;
+  playerId?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -48,27 +49,33 @@ export class AuthService {
 
   async joinTeam(teamId: string, displayName: string): Promise<void> {
     const res = await firstValueFrom(
-      this.http.post<{ access_token: string; role: string; team_id: string; display_name: string }>(
-        `${environment.apiUrl}/auth/join`,
-        {
-          session_code: environment.sessionCode,
-          team_id: teamId,
-          display_name: displayName,
-        },
-      ),
+      this.http.post<{
+        access_token: string;
+        role: string;
+        team_id: string;
+        display_name: string;
+        player_id?: string;
+      }>(`${environment.apiUrl}/auth/join`, {
+        session_code: environment.sessionCode,
+        team_id: teamId,
+        display_name: displayName,
+      }),
     );
     this.setAuth({
       token: res.access_token,
       role: 'team',
       teamId: res.team_id,
       displayName: res.display_name,
+      playerId: res.player_id,
     });
   }
 
-  logout(): void {
+  logout(redirectHome = true): void {
     localStorage.removeItem(this.storageKey);
     this.auth.set(null);
-    this.router.navigate(['/']);
+    if (redirectHome) {
+      this.router.navigate(['/']);
+    }
   }
 
   private setAuth(state: AuthState): void {

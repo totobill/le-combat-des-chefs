@@ -239,6 +239,27 @@
         <div class="card content-card">
           <h2 class="font-bebas">Questions — Duo / Carré / Cash</h2>
 
+          <div class="import-block">
+            <div class="import-header">
+              <div>
+                <strong>Import / export JSON</strong>
+                <p class="hint">Format pensé pour une IA : téléchargez le template, faites-le remplir, puis importez.</p>
+              </div>
+              <div class="import-actions">
+                <button type="button" class="btn btn-ghost btn-sm" (click)="downloadDccTemplate()">Template vide</button>
+                @if (dccQuestions.length) {
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="downloadDccExport()">Exporter ({{ dccQuestions.length }})</button>
+                }
+              </div>
+            </div>
+            <label class="field-label">Coller le JSON ici (ou contenu d'un fichier .json)</label>
+            <textarea [(ngModel)]="dccImportText" rows="8" placeholder='{ "format": "combat-des-chefs-dcc", "questions": [ ... ] }'></textarea>
+            @if (dccImportError) {
+              <p class="import-error">{{ dccImportError }}</p>
+            }
+            <button type="button" class="btn btn-primary content-import-btn" (click)="importDccBulk()">Importer les questions</button>
+          </div>
+
           <div class="add-form">
             <label>Question</label>
             <input [(ngModel)]="newDccQuestion.question" placeholder="Texte de la question" />
@@ -391,8 +412,8 @@
                   <option [value]="t.id">{{ t.name }}</option>
                 }
               </select>
-              <input type="number" [(ngModel)]="mdpPlayerIndex" min="0" max="4" class="num" placeholder="Joueur" />
-              <button class="btn btn-primary" [disabled]="!mdpCanStart()" (click)="mdpStartTurn()">▶ Lancer 30 s</button>
+              <input [(ngModel)]="mdpPlayerName" placeholder="Prénom du joueur" />
+              <button class="btn btn-primary" [disabled]="!mdpCanStart()" (click)="mdpStartTurn()">Se connecter à l'équipe</button>
             </div>
             @if (mdpError) { <p class="error">{{ mdpError }}</p> }
 
@@ -618,7 +639,7 @@
       @if (teamJoinQrs.length) {
         <div class="card">
           <h2 class="font-bebas">QR par équipe</h2>
-          <p class="hint">Chaque QR pré-sélectionne l'équipe sur la page Rejoindre.</p>
+          <p class="hint">Chaque joueur scanne le QR de son équipe et entre son prénom sur son téléphone. Ne partagez pas l'URL /team après connexion.</p>
           <div class="qr-grid qr-grid-teams">
             @for (t of teamJoinQrs; track t.teamId) {
               <div class="qr-card">

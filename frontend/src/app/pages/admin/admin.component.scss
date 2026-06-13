@@ -577,6 +577,35 @@ hr {
   align-self: flex-start;
 }
 
+.import-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+}
+
+.import-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.import-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.import-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
 .content-list-block {
   display: flex;
   flex-direction: column;

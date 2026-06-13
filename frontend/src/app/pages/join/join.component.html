@@ -1,33 +1,47 @@
 <div class="page-center">
   <h1 class="font-bebas title">REJOINDRE</h1>
-  <p class="subtitle">Capitaine ou joueur · Téléphone d'équipe</p>
+  <p class="subtitle">Chaque joueur se connecte avec son prénom sur son téléphone.</p>
 
-  <div class="card form-card">
-    <label>Votre prénom</label>
-    <input [(ngModel)]="displayName" placeholder="Marie, capitaine..." />
-
-    <label class="mt">Votre équipe</label>
-    <div class="team-choices">
-      @for (t of teams; track t.id) {
-        <button
-          type="button"
-          class="team-btn"
-          [class.selected]="selectedTeamId === t.id"
-          [style.--tc]="t.color"
-          (click)="selectedTeamId = t.id"
-        >
-          <span class="dot" [style.background]="t.color"></span>
-          {{ t.name }}
-        </button>
-      }
+  @if (showExistingSession && auth.auth(); as session) {
+    <div class="card session-card">
+      <p class="session-msg">
+        Ce téléphone est déjà connecté en tant que
+        <strong>{{ session.displayName }}</strong> ({{ existingTeamName() }}).
+      </p>
+      <p class="hint">Un autre joueur doit d'abord changer de compte, ou utiliser son propre téléphone.</p>
+      <div class="session-actions">
+        <button type="button" class="btn btn-primary" (click)="continueAsCurrent()">Continuer</button>
+        <button type="button" class="btn btn-ghost" (click)="switchPlayer()">Changer de joueur</button>
+      </div>
     </div>
+  } @else {
+    <div class="card form-card">
+      <label>Votre prénom</label>
+      <input [(ngModel)]="displayName" placeholder="Marie, Pierre…" autocomplete="name" />
 
-    @if (error) {
-      <p class="error">{{ error }}</p>
-    }
+      <label class="mt">Votre équipe</label>
+      <div class="team-choices">
+        @for (t of teams; track t.id) {
+          <button
+            type="button"
+            class="team-btn"
+            [class.selected]="selectedTeamId === t.id"
+            [style.--tc]="t.color"
+            (click)="selectedTeamId = t.id"
+          >
+            <span class="dot" [style.background]="t.color"></span>
+            {{ t.name }}
+          </button>
+        }
+      </div>
 
-    <button class="btn btn-primary btn-lg w-full" [disabled]="loading" (click)="submit()">
-      {{ loading ? 'Connexion...' : 'Entrer dans la partie' }}
-    </button>
-  </div>
+      @if (error) {
+        <p class="error">{{ error }}</p>
+      }
+
+      <button class="btn btn-primary btn-lg w-full" [disabled]="loading" (click)="submit()">
+        {{ loading ? 'Connexion...' : 'Entrer dans la partie' }}
+      </button>
+    </div>
+  }
 </div>

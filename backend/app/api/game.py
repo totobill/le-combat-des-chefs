@@ -12,8 +12,15 @@ from app.schemas import (
     ChipsStartRequest,
     ChipsSubmit,
     DccAnswerRequest,
+    DccCashValidateRequest,
     DccChooseRequest,
     DccQuestionCreate,
+    DccQuestionsBulkCreate,
+    DccSetTeamRequest,
+    DccStartEpisodeRequest,
+    DccSetTeamRequest,
+    DccStartRequest,
+    MdpHostJoin,
     MdpStartRound,
     MdpWordsCreate,
     ModuleStart,
@@ -25,7 +32,7 @@ from app.schemas import (
     BoardDisplay,
     TeamUpdate,
 )
-from app.security import require_admin, require_team, team_uuid
+from app.security import player_id as player_id_from_user, require_admin, require_team, team_uuid
 from app.services import modules as mod
 from app.services.game import (
     RESETTABLE_MODULES,
@@ -118,7 +125,7 @@ async def adjust_score(
 ) -> dict:
     session = await ensure_session(db)
     try:
-        team = await adjust_team_score(db, session, str(body.team_id), body.delta)
+        team = await adjust_team_score(db, session, str(body.team_id), body.delta, body.module)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     await db.commit()
@@ -204,10 +211,98 @@ async def start_module(
 
 # ─── DCC ──────────────────────────────────────────────────────────
 
-@router.post("/dcc/start")
-async def dcc_start(db: AsyncSession = Depends(get_db), _=Depends(require_admin)) -> dict:
+@router.post("/dcc/start-episode")
+async def dcc_start_episode(
+    body: DccStartEpisodeRequest,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
     session = await ensure_session(db)
-    data = await mod.dcc_start_question(db, session)
+    qids = [str(q) for q in body.question_ids] if body.question_ids else None
+    try:
+        data = await mod.dcc_start_episode(db, session, str(body.team_id), qids)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return data
+
+
+@router.post("/dcc/start")
+async def dcc_start(
+    body: DccStartRequest | None = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    if body and body.team_id and not body.question_id:
+        qids = None
+        try:
+            data = await mod.dcc_start_episode(db, session, str(body.team_id), qids)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from e
+        await db.commit()
+        await _broadcast(db)
+        return data
+    qid = str(body.question_id) if body and body.question_id else None
+    tid = str(body.team_id) if body and body.team_id else None
+    try:
+        data = await mod.dcc_start_question(db, session, qid, tid)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return data
+
+
+@router.post("/dcc/next-question")
+async def dcc_next_question(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        await mod.dcc_advance_question(db, session)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return await mod.dcc_host_view(db, session)
+
+
+@router.post("/dcc/set-team")
+async def dcc_set_team(
+    body: DccSetTeamRequest,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        await mod.dcc_set_active_team(db, session, str(body.team_id))
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return await mod.dcc_host_view(db, session)
+
+
+@router.get("/dcc/host-view")
+async def dcc_host_view(db: AsyncSession = Depends(get_db), _=Depends(require_admin)) -> dict:
+    session = await ensure_session(db)
+    return await mod.dcc_host_view(db, session)
+
+
+@router.post("/dcc/validate-cash")
+async def dcc_validate_cash(
+    body: DccCashValidateRequest,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        data = await mod.dcc_validate_cash(db, session, str(body.team_id), body.correct)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
     await db.commit()
     await _broadcast(db)
     return data
@@ -220,13 +315,14 @@ async def dcc_choose(
     user=Depends(require_team),
 ) -> dict:
     session = await ensure_session(db)
+    tid = str(team_uuid(user))
     try:
-        data = await mod.dcc_team_choose(db, session, str(team_uuid(user)), body.mode)
+        await mod.dcc_team_choose(db, session, tid, body.mode)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     await db.commit()
     await _broadcast(db)
-    return data
+    return await mod.dcc_get_question_for_team(db, session, tid)
 
 
 @router.get("/dcc/current")
@@ -242,10 +338,14 @@ async def dcc_answer(
     user=Depends(require_team),
 ) -> dict:
     session = await ensure_session(db)
-    await mod.dcc_team_answer(db, session, str(team_uuid(user)), body.answer)
+    tid = str(team_uuid(user))
+    try:
+        await mod.dcc_team_answer(db, session, tid, body.answer)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
     await db.commit()
     await _broadcast(db)
-    return {"ok": True}
+    return await mod.dcc_get_question_for_team(db, session, tid)
 
 
 @router.post("/dcc/reveal")
@@ -281,6 +381,22 @@ async def add_dcc_question(
     db.add(q)
     await db.commit()
     return {"id": str(q.id)}
+
+
+@router.post("/dcc/questions/bulk")
+async def add_dcc_questions_bulk(
+    body: DccQuestionsBulkCreate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    added = 0
+    for item in body.questions:
+        q = DccQuestion(session_id=session.id, **item.model_dump())
+        db.add(q)
+        added += 1
+    await db.commit()
+    return {"ok": True, "count": added}
 
 
 @router.delete("/dcc/questions/{question_id}")
@@ -366,6 +482,52 @@ async def delete_mdp_word(
     return {"ok": True}
 
 
+@router.post("/mdp/present")
+async def mdp_present(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_team),
+) -> dict:
+    session = await ensure_session(db)
+    tid = str(team_uuid(user))
+    name = (user.get("display_name") or "Joueur").strip()
+    pid = player_id_from_user(user)
+    await mod.mdp_team_present(db, session, tid, pid, name)
+    await db.commit()
+    await _broadcast(db)
+    return {"ok": True, "team_id": tid, "player_id": pid, "player_name": name}
+
+
+@router.post("/mdp/host-leave")
+async def mdp_host_leave(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        data = await mod.mdp_host_leave(db, session)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return data
+
+
+@router.post("/mdp/host-join")
+async def mdp_host_join(
+    body: MdpHostJoin,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        data = await mod.mdp_host_join(db, session, str(body.team_id), body.player_name)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return data
+
+
 @router.post("/mdp/start-turn")
 async def mdp_start_turn(
     body: MdpStartRound,
@@ -374,28 +536,87 @@ async def mdp_start_turn(
 ) -> dict:
     session = await ensure_session(db)
     try:
-        data = await mod.mdp_start_team_round(db, session, str(body.team_id), body.player_index)
+        data = await mod.mdp_host_join(db, session, str(body.team_id), body.player_name)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     await db.commit()
     await _broadcast(db)
     return data
+
+
+@router.post("/mdp/start-countdown")
+async def mdp_start_countdown(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_team),
+) -> dict:
+    session = await ensure_session(db)
+    tid = str(team_uuid(user))
+    try:
+        await mod.mdp_start_countdown(db, session, tid)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return await mod.mdp_player_view(db, session, tid)
+
+
+@router.post("/mdp/pass")
+async def mdp_pass(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(require_team),
+) -> dict:
+    session = await ensure_session(db)
+    tid = str(team_uuid(user))
+    try:
+        await mod.mdp_pass_word(db, session, tid)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return await mod.mdp_player_view(db, session, tid)
 
 
 @router.post("/mdp/next-word")
 async def mdp_next_word(db: AsyncSession = Depends(get_db), user=Depends(require_team)) -> dict:
     session = await ensure_session(db)
-    es = await mod.get_event_state(db, session)
-    current = es.state.get("mdp", {}).get("current", {})
-    if str(team_uuid(user)) != current.get("team_id"):
-        raise HTTPException(403, "Ce n'est pas votre tour")
+    tid = str(team_uuid(user))
     try:
-        data = await mod.mdp_next_word(db, session)
+        await mod.mdp_pass_word(db, session, tid)
     except ValueError as e:
         raise HTTPException(400, str(e)) from e
     await db.commit()
     await _broadcast(db)
-    return data
+    return await mod.mdp_player_view(db, session, tid)
+
+
+@router.post("/mdp/validate")
+async def mdp_validate(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        await mod.mdp_validate_word(db, session)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return await mod.mdp_host_view(db, session)
+
+
+@router.post("/mdp/cancel-word")
+async def mdp_cancel_word(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_admin),
+) -> dict:
+    session = await ensure_session(db)
+    try:
+        await mod.mdp_cancel_word(db, session)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    await db.commit()
+    await _broadcast(db)
+    return await mod.mdp_host_view(db, session)
 
 
 @router.post("/mdp/end-turn")

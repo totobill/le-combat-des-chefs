@@ -1,12 +1,89 @@
 <div class="page host">
+  @if (hostInFocus()) {
+    <div class="host-fullscreen dcc-focus">
+      <header class="focus-header">
+        <button type="button" class="back-btn" (click)="exitDccFocus()">← Retour</button>
+        <span class="focus-label font-bebas">Duo · Carré · Cash</span>
+      </header>
+
+      <div class="focus-body">
+        <div class="q-number font-bebas">Question {{ dccQuestionNumber() }} / {{ dccQuestionTotal() }}</div>
+        @if (dccHostView.category) {
+          <span class="q-cat">{{ dccHostView.category }}</span>
+        }
+        @if (dccHostView.active_team_finished) {
+          <p class="status-msg ok">L'équipe active a terminé toutes les questions — passez à l'équipe suivante.</p>
+        } @else if (dccHostView.question) {
+          <p class="focus-q font-bebas">{{ dccHostView.question }}</p>
+        }
+
+        @if (dccHostView.active_team_name) {
+          <div class="focus-active-team" [style.borderColor]="dccHostView.active_team_color">
+            Passage : <span [style.color]="dccHostView.active_team_color">{{ dccHostView.active_team_name }}</span>
+          </div>
+        }
+
+        @if (dccHostView.team_status?.length) {
+          <div class="focus-teams">
+            @for (ts of dccHostView.team_status!; track ts.team_id) {
+              <span class="team-chip" [class.active]="ts.is_active" [class.done]="ts.finished" [style.--c]="ts.team_color">
+                {{ ts.team_name }} · {{ dccTeamProgressLabel(ts) }}
+              </span>
+            }
+          </div>
+        }
+
+        <div class="row focus-team-row">
+          <select [(ngModel)]="dccTeamId">
+            @for (t of teams; track t.id) {
+              <option [value]="t.id">{{ t.name }}</option>
+            }
+          </select>
+          <button type="button" class="btn btn-primary" (click)="dccAssignTeam()">▶ Passer le relais</button>
+          <button type="button" class="btn btn-ghost" (click)="dccNextTeam()">Équipe suivante</button>
+        </div>
+
+        @if (dccHostView.answers; as ans) {
+          <div class="focus-answers card">
+            <div class="ans-row"><span class="ans-label duo">Duo</span> {{ ans.duo }}</div>
+            <div class="ans-row"><span class="ans-label carre">Carré</span> {{ ans.carre }}</div>
+            <div class="ans-row"><span class="ans-label cash">Cash</span> {{ ans.cash }}</div>
+          </div>
+        }
+
+        @if (dccPendingCash().length) {
+          <div class="focus-cash">
+            <h3 class="sub-title">Cash à valider</h3>
+            @for (p of dccPendingCash(); track p.team_id) {
+              <div class="cash-pending" [style.borderLeftColor]="p.team_color">
+                <span class="font-bebas" [style.color]="p.team_color">{{ p.team_name }}</span>
+                <span class="cash-answer">« {{ p.answer }} »</span>
+                <div class="cash-btns">
+                  <button type="button" class="btn btn-success btn-sm" (click)="dccValidateCash(p.team_id, true)">✓</button>
+                  <button type="button" class="btn btn-danger btn-sm" (click)="dccValidateCash(p.team_id, false)">✗</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <div class="focus-actions">
+          @if (dccHostView.can_advance) {
+            <button type="button" class="btn btn-primary btn-lg" (click)="dccNextQuestion()">Question suivante →</button>
+          } @else if (dccHostView.active_team_finished) {
+            <button type="button" class="btn btn-primary btn-lg" (click)="dccNextTeam()">Équipe suivante →</button>
+          }
+        </div>
+      </div>
+    </div>
+  } @else {
   <header class="top">
     <div>
       <h1 class="font-bebas">ANIMATEUR</h1>
-      <p class="hint">Scores · Jeux live · Grand écran</p>
+      <p class="hint">Scores · Jeux live</p>
     </div>
     <div class="actions">
       <a routerLink="/board" target="_blank" class="btn btn-primary">▶ Grand écran</a>
-      <button class="btn btn-ghost btn-sm" (click)="clearBoard()">Effacer TV</button>
       <button class="btn btn-ghost" (click)="auth.logout()">Déconnexion</button>
     </div>
   </header>
@@ -57,81 +134,164 @@
   }
 
   @if (tab() === 'dcc') {
-    <section class="card panel game-panel">
+    <section class="card panel game-panel dcc-host">
       <h2 class="font-bebas">Duo · Carré · Cash</h2>
-      <p class="hint">Vous présentez, vous validez. La bonne réponse reste visible ici, pas sur la TV tant que vous ne révélez pas.</p>
 
-      <label>Question</label>
-      <select [(ngModel)]="dccQuestionId">
-        @for (q of questions; track q.id) {
-          <option [value]="q.id">{{ q.category }} — {{ q.question }}</option>
+      <div class="row team-passage-row">
+        <label>Équipe au passage</label>
+        <select [(ngModel)]="dccTeamId">
+          @for (t of teams; track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        @if (dccHostView.active) {
+          <button type="button" class="btn btn-primary btn-sm" (click)="dccAssignTeam()">▶ Passer le relais</button>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="dccNextTeam()">Équipe suivante</button>
         }
-      </select>
+      </div>
 
-      @if (activeDccQuestion(); as q) {
-        <div class="host-answer card">
-          <strong>Réponses (animateur seulement)</strong>
-          <p>Duo : {{ q.duo_opts[q.duo_correct] }} · Carré : {{ q.carre_opts[q.carre_correct] }} · Cash : {{ q.cash_answer }}</p>
+      @if (dccHostView.active && dccHostView.team_status?.length) {
+        <div class="team-status-list">
+          @for (ts of dccHostView.team_status!; track ts.team_id) {
+            <div class="team-status-row" [class.active]="ts.is_active">
+              <span class="dot" [style.background]="ts.team_color"></span>
+              <span>{{ ts.team_name }}</span>
+              <span class="status-tag">{{ dccTeamProgressLabel(ts) }} · {{ dccTeamLabel(ts.status) }}</span>
+            </div>
+          }
         </div>
+        <p class="hint">{{ dccTeamsFinishedCount() }} / {{ teams.length }} équipe(s) ont terminé l'épreuve.</p>
+      }
 
-        <button class="btn btn-primary btn-lg" (click)="dccShowQuestion()">1. Afficher la question à l'écran</button>
+      @if (!dccHostView.active) {
+        <button type="button" class="btn btn-primary btn-lg" (click)="dccStartEpisode()">
+          ▶ Lancer l'épreuve pour l'équipe sélectionnée ({{ questions.length }} questions)
+        </button>
+      }
 
-        <h3 class="sub-title">Par équipe</h3>
-        @for (t of teams; track t.id) {
-          <div class="team-game-row" [style.borderLeftColor]="t.color">
-            <span class="font-bebas" [style.color]="t.color">{{ t.name }}</span>
-            <select [(ngModel)]="dccTeamLevels[t.id]" class="level-select">
-              <option value="duo">Duo ({{ scoring.dcc.duo }} pt)</option>
-              <option value="carre">Carré ({{ scoring.dcc.carre }} pts)</option>
-              <option value="cash">Cash ({{ scoring.dcc.cash }} pts)</option>
-            </select>
-            <button class="btn btn-ghost btn-sm" (click)="dccShowChoices(t)">Montrer choix TV</button>
-            <button class="btn btn-success btn-sm" (click)="dccValidate(t, true)">✓ Bonne</button>
-            <button class="btn btn-danger btn-sm" (click)="dccValidate(t, false)">✗ Mauvaise</button>
+      @if (dccHostView.active) {
+        <button type="button" class="btn btn-primary btn-lg resume-btn" (click)="enterDccFocus()">
+          ▶ Reprendre ({{ dccQuestionNumber() }}/{{ dccQuestionTotal() }})
+        </button>
+      }
+
+      <p class="hint">Chaque équipe joue toutes les questions à son tour. La progression est mémorisée par équipe (reprise après bug).</p>
+      <div class="dcc-q-list">
+        @for (q of questions; track q.id) {
+          <div class="dcc-q-row" [class.current]="q.id === dccQuestionId">
+            <span class="q-cat">{{ q.category }}</span>
+            <span class="q-text">{{ q.question }}</span>
+            @if (q.id === dccQuestionId && dccHostView.active) {
+              <span class="live-tag">En cours</span>
+            }
           </div>
         }
-
-        <button class="btn btn-ghost" (click)="dccRevealAnswer()">Révéler la bonne réponse à l'écran</button>
-      }
+        @if (!questions.length) {
+          <p class="hint">Aucune question — ajoutez-en dans Admin → Contenu.</p>
+        }
+      </div>
     </section>
   }
 
   @if (tab() === 'mdp') {
     <section class="card panel game-panel">
       <h2 class="font-bebas">Mot de Passe</h2>
-      <p class="hint">Le mot s'affiche sur le grand écran. Vous validez chaque mot trouvé (+{{ scoring.mdp.points_per_word }} pt).</p>
 
-      <div class="row">
-        <select [(ngModel)]="mdpTeamId">
-          @for (t of teams; track t.id) {
-            <option [value]="t.id">{{ t.name }}</option>
+      @if (mdpPassageActive()) {
+        <div class="status-msg warn passage-banner">
+          <strong>Passage en cours</strong> · {{ mdpActiveTeamName() }} · {{ mdpActivePlayerName() }}
+          <span class="hint block">
+            Vous ne pouvez pas changer d'équipe tant que ce passage n'est pas terminé.
+            Cliquez « Fin du passage » puis connectez-vous à l'équipe suivante.
+          </span>
+        </div>
+      } @else {
+        <p class="hint">Connectez-vous à l'équipe au passage. L'équipe lance le décompte quand tout le monde est prêt.</p>
+      }
+
+      @if (mdpCurrent(); as cur) {
+        <div class="mdp-live card">
+          @if (cur['phase'] === 'countdown') {
+            <span class="font-bebas timer">Décompte {{ mdpCountdownSec() }} s</span>
+          } @else if (cur['phase'] === 'playing') {
+            <div class="mdp-turn-timer font-bebas" [class.warning]="mdpTurnRemaining() <= 5">{{ mdpTurnRemaining() }}s</div>
+            <div class="mdp-host-word font-bebas">{{ cur['word'] }}</div>
+            <p class="hint">{{ cur['words_found'] ?? 0 }} mot(s) validé(s) · +{{ cur['turn_points'] ?? 0 }} pt ce passage</p>
+            <div class="action-row">
+              <button class="btn btn-success btn-lg" (click)="mdpValidateWord()">✓ Mot trouvé (+{{ mdpPointsPerWord() }} pt)</button>
+              <button class="btn btn-ghost" (click)="mdpCancelWord()">Annuler le mot</button>
+            </div>
           }
-        </select>
-        <label>Joueur n°</label>
-        <input type="number" [(ngModel)]="mdpPlayerIndex" min="1" max="6" class="num" />
-      </div>
-
-      <div class="row">
-        <select [(ngModel)]="mdpWordId" class="flex-grow">
-          @for (w of mdpWords; track w.id) {
-            <option [value]="w.id">{{ w.word }}</option>
-          }
-        </select>
-        <button class="btn btn-ghost btn-sm" (click)="mdpPickRandomWord()">Aléatoire</button>
-      </div>
-
-      @if (mdpRunning) {
-        <div class="mdp-live">
-          <span class="font-bebas timer">{{ mdpTimerSec }}s</span>
-          <span>{{ mdpWordsFound }} mot(s) · {{ activeMdpWord()?.word }}</span>
         </div>
       }
 
       <div class="action-row">
-        <button class="btn btn-primary btn-lg" (click)="mdpStartTurn()" [disabled]="mdpRunning">▶ Lancer (30 s)</button>
-        <button class="btn btn-success btn-lg" (click)="mdpWordFound()" [disabled]="!mdpRunning && mdpTimerSec <= 0">+ Mot trouvé</button>
-        <button class="btn btn-danger" (click)="mdpEndTurn()">Fin du passage</button>
+        <button class="btn btn-danger" (click)="mdpEndTurn()" [disabled]="!mdpCanEnd()">Fin du passage</button>
       </div>
+
+      @if (!mdpPassageActive()) {
+        <h3 class="sub-title">Prochain passage</h3>
+        <div class="row">
+          <select [(ngModel)]="mdpTeamId" (ngModelChange)="onMdpTeamChange()">
+            <option value="" disabled>Choisir une équipe</option>
+            @for (t of teams; track t.id) {
+              <option [value]="t.id">{{ t.name }}</option>
+            }
+          </select>
+          @if (mdpTeamPlayers().length) {
+            <label>Joueur</label>
+            <select [(ngModel)]="mdpPlayerName">
+              @for (name of mdpTeamPlayers(); track name) {
+                <option [value]="name">{{ name }}</option>
+              }
+            </select>
+          } @else {
+            <label>Prénom du joueur</label>
+            <input [(ngModel)]="mdpPlayerName" placeholder="Prénom inscrit par l'équipe" />
+          }
+          <button class="btn btn-primary" (click)="mdpJoinTeam()" [disabled]="!mdpCanJoin()">Se connecter à l'équipe</button>
+        </div>
+
+        @if (mdpJoinBlockedReason() && mdpTeamId) {
+          <p class="hint">{{ mdpJoinBlockedReason() }}</p>
+        }
+
+        @if (mdpLobbyTeamName()) {
+          <p class="status-msg ok">Connecté à {{ mdpLobbyTeamName() }} · {{ mdpLobbyPlayerName() }}</p>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="mdpLeaveTeam()">Changer d'équipe</button>
+        }
+      }
+
+      @if (mdpError) {
+        <p class="error">{{ mdpError }}</p>
+      }
+
+      @if (teams.length) {
+        <div class="team-status-list mdp-progress">
+          <p class="hint">Joueurs connectés — cliquez sur une équipe pour la sélectionner.</p>
+          @for (t of teams; track t.id) {
+            <button
+              type="button"
+              class="team-status-row"
+              [class.active]="t.id === mdpTeamId"
+              [disabled]="mdpPassageActive()"
+              (click)="selectMdpTeam(t.id)"
+            >
+              <span class="dot" [style.background]="t.color"></span>
+              <span>{{ t.name }}</span>
+              <span class="status-tag">
+                @if (mdpPlayersForTeam(t.id).length) {
+                  {{ mdpPlayersForTeam(t.id).join(', ') }}
+                } @else {
+                  personne connectée
+                }
+                · {{ mdpTeamProgress(t.id).turns_completed ?? 0 }} passage(s)
+                · {{ t.score_total }} pt
+              </span>
+            </button>
+          }
+        </div>
+      }
     </section>
   }
 
@@ -200,5 +360,6 @@
         </div>
       }
     </section>
+  }
   }
 </div>

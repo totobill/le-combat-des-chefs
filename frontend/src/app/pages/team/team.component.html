@@ -1,116 +1,232 @@
-<div class="page team-page">
-  @if (myTeam) {
-    <header class="header" [style.borderColor]="myTeam.color">
-      <div>
-        <div class="label">Équipe · {{ auth.auth()?.displayName }}</div>
-        <div class="font-bebas name" [style.color]="myTeam.color">{{ myTeam.name }}</div>
-      </div>
-      <div class="font-bebas score" [style.color]="myTeam.color">{{ myTeam.score_total }}</div>
+@if (expandedGame(); as gameId) {
+  <div class="game-fullscreen">
+    <header class="game-fs-header">
+      <button type="button" class="back-btn" (click)="closeGame()">← Retour</button>
+      <span class="game-fs-title">{{ gameIcon(gameId) }} {{ gameLabel(gameId) }}</span>
     </header>
-  }
 
-  @if (!currentModule) {
-    <div class="waiting">
-      <div class="icon">⏳</div>
-      <div class="font-bebas">En attente de l'animateur</div>
-    </div>
-  }
+    <div class="game-fs-body">
+      @if (gameId === 'dcc') {
+        @if (dccShowPanel()) {
+          <div class="module-panel dcc-flow">
+            @if (dccCategory()) {
+              <div class="live-cat">{{ dccCategory() }}</div>
+            }
+            <h3 class="panel-title font-bebas">{{ dccQuestionText() || '...' }}</h3>
+            @if (dccProgressLabel()) {
+              <p class="hint">{{ dccProgressLabel() }}</p>
+            }
 
-  @if (currentModule === 'dcc') {
-    <section class="card module-card">
-      <span class="badge badge-duo">DCC</span>
-      <h2 class="font-bebas q">{{ dccView['question'] || '...' }}</h2>
+            @if (!dccActive() && (dccStatus() === 'waiting' || dccStatus() === 'waiting_host' || dccStatus() === 'team_finished')) {
+              <p class="status-msg">{{ dccWaitingMessage() }}</p>
+            }
 
-      @if (dccView['phase'] === 'choosing' && !dccView['mode']) {
-        <p class="hint">Choisissez votre niveau :</p>
-        <div class="mode-btns">
-          <button class="btn mode duo" (click)="dccChoose('duo')">Duo · 1 pt</button>
-          <button class="btn mode carre" (click)="dccChoose('carre')">Carré · 3 pts</button>
-          <button class="btn mode cash" (click)="dccChoose('cash')">Cash · 6 pts</button>
-        </div>
-      }
+            @if (dccActive()) {
+            @if (dccError) {
+              <p class="status-msg ko">{{ dccError }}</p>
+            }
 
-      @if (dccView['mode'] && dccView['phase'] === 'answering') {
-        @if (dccView['mode'] === 'cash') {
-          <input [(ngModel)]="cashInput" placeholder="Votre réponse..." />
-          <button class="btn btn-primary btn-lg w-full" (click)="dccSubmitAnswer()">Valider</button>
-        } @else {
-          <div class="opts">
-            @for (opt of dccOpts(); track $index) {
-              <button
-                class="opt-btn"
-                [class.selected]="dccAnswer === $index"
-                (click)="dccAnswer = $index"
-              >
-                {{ opt }}
-              </button>
+            @if (dccStatus() === 'choosing') {
+              <p class="hint">Choisissez votre niveau de difficulté :</p>
+              <div class="mode-btns">
+                <button type="button" class="btn mode duo" (click)="dccChoose('duo')">Duo</button>
+                <button type="button" class="btn mode carre" (click)="dccChoose('carre')">Carré</button>
+                <button type="button" class="btn mode cash" (click)="dccChoose('cash')">Cash</button>
+              </div>
+            }
+
+            @if (dccStatus() === 'answering') {
+              @if (dccView['mode'] === 'cash') {
+                <input [(ngModel)]="cashInput" placeholder="Votre réponse..." />
+                <button type="button" class="btn btn-primary w-full" (click)="dccSubmitAnswer()">Envoyer à l'animateur</button>
+              } @else {
+                <div class="opts">
+                  @for (opt of dccOpts(); track $index) {
+                    <button type="button" class="opt-btn" [class.selected]="dccAnswer === $index" (click)="dccPickOption($index)">
+                      {{ opt }}
+                    </button>
+                  }
+                </div>
+              }
+            }
+
+            @if (dccStatus() === 'pending') {
+              <p class="status-msg">Réponse Cash envoyée — en attente de l'animateur</p>
+              <p class="hint">« {{ dccView['submitted_answer'] }} »</p>
+            }
+
+            @if (dccStatus() === 'done' && dccTeamResult(); as r) {
+              <div class="status-msg" [class.ok]="r.correct" [class.ko]="!r.correct">
+                @if (r.correct) {
+                  ✓ Bonne réponse · +{{ r.points ?? 0 }} pt
+                } @else {
+                  ✗ Mauvaise réponse · 0 pt
+                }
+              </div>
+              @if (dccCorrectLabel(r)) {
+                <p class="hint">Bonne réponse : {{ dccCorrectLabel(r) }}</p>
+              }
+              <p class="hint">En attente de la question suivante…</p>
+            }
             }
           </div>
-          <button class="btn btn-primary btn-lg w-full" (click)="dccSubmitAnswer()">Valider</button>
+        } @else {
+          <p class="hint">Pas de question en cours — l'animateur lance une manche.</p>
         }
       }
 
-      @if (dccView['phase'] === 'done' || isDccRevealed()) {
-        <p class="done">Réponse enregistrée — en attente de révélation</p>
-      }
-    </section>
-  }
-
-  @if (currentModule === 'mdp') {
-    <section class="card module-card mdp">
-      @if (mdpPhase() === 'playing' && mdpView['word']) {
-        <div class="timer font-bebas" [class.warn]="mdpTimer() <= 5">{{ mdpTimer() }}s</div>
-        <div class="word font-bebas">{{ mdpView['word'] }}</div>
-        <p class="hint">Tenez le téléphone au-dessus de votre front</p>
-        <button class="btn btn-success btn-lg w-full tap" (click)="mdpNextWord()">
-          ✓ Mot trouvé → suivant ({{ mdpView['words_found'] || 0 }} validé(s))
-        </button>
-      } @else if (mdpPhase() === 'ended') {
-        <div class="ended">
-          <div class="font-bebas">Temps écoulé !</div>
-          <p class="score-line">{{ mdpView['words_found'] || 0 }} mot(s) trouvé(s)</p>
-          <p class="hint">{{ mdpView['message'] }}</p>
-        </div>
-      } @else {
-        <div class="waiting">
-          <div class="icon">🎭</div>
-          <p>{{ mdpView['message'] || "En attente que l'animateur lance votre passage" }}</p>
-        </div>
-      }
-    </section>
-  }
-
-  @if (currentModule === 'paroles') {
-    <section class="card module-card">
-      <h2 class="font-bebas">{{ parolesView['title'] }}</h2>
-      <p class="lyrics">{{ parolesView['display_text'] }}</p>
-      @if (parolesView['phase'] === 'writing' && !parolesLocked()) {
-        <div class="blanks">
-          @for (a of parolesAnswers; track $index) {
-            <input [(ngModel)]="parolesAnswers[$index]" [placeholder]="'Mot ' + ($index + 1)" />
+      @if (gameId === 'mdp') {
+        <div class="module-panel mdp">
+          @if (mdpPhase() === 'countdown') {
+            <div class="mdp-timer font-bebas countdown">{{ mdpCountdown() || '…' }}</div>
+            <p class="hint">Tenez le téléphone prêt — le mot arrive…</p>
+          } @else if (mdpPhase() === 'playing' && mdpView['word']) {
+            <div class="mdp-timer font-bebas" [class.warn]="mdpTurnRemaining() <= 5">{{ mdpTurnRemaining() }}s</div>
+            <p class="hint">{{ mdpPlayerLabel() }} · {{ mdpWordsFound() }} mot(s) · +{{ mdpTurnPoints() }} pt</p>
+            <div class="mdp-word font-bebas">{{ mdpView['word'] }}</div>
+            <p class="hint">Tenez le téléphone au-dessus du front du joueur</p>
+            <button type="button" class="btn btn-ghost w-full" (click)="mdpPassWord()">Passer → mot suivant</button>
+          } @else if (mdpPhase() === 'ended') {
+            <p class="status-msg ok">{{ mdpView['message'] }}</p>
+          } @else if (mdpPhase() === 'lobby') {
+            @if (mdpHostReady()) {
+              <p class="status-msg ok">Animateur connecté ✓</p>
+              <p class="hint">Quand tout le monde est en place, lancez le décompte.</p>
+              <button type="button" class="btn btn-primary btn-lg w-full" (click)="mdpStartCountdown()">
+                Prêts ! (décompte 5 s)
+              </button>
+            } @else {
+              <p class="hint">{{ mdpView['message'] }}</p>
+            }
+          } @else {
+            <p class="hint">{{ mdpView['message'] || "Ouvrez le jeu — l'animateur doit se connecter à votre équipe." }}</p>
           }
         </div>
-        <button class="btn btn-primary btn-lg w-full" (click)="parolesSubmit()">Valider</button>
-      } @else if (parolesLocked()) {
-        <p class="done">Réponse envoyée ✓</p>
-      } @else {
-        <p class="hint">Écoutez la musique...</p>
+      }
+
+      @if (gameId === 'paroles') {
+        @if (currentModule === 'paroles') {
+          <div class="module-panel">
+            <h3 class="panel-title">{{ parolesView['title'] }}</h3>
+            <p class="lyrics">{{ parolesView['display_text'] }}</p>
+            @if (parolesView['phase'] === 'writing' && !parolesLocked()) {
+              <div class="blanks">
+                @for (a of parolesAnswers; track $index) {
+                  <input [(ngModel)]="parolesAnswers[$index]" [placeholder]="'Mot ' + ($index + 1)" />
+                }
+              </div>
+              <button type="button" class="btn btn-primary w-full" (click)="parolesSubmit()">Valider</button>
+            } @else if (parolesLocked()) {
+              <p class="status-msg">Réponse envoyée ✓</p>
+            } @else {
+              <p class="hint">Écoutez la musique…</p>
+            }
+            @if (parolesResult(); as r) {
+              <p class="status-msg ok">Score : {{ r.score }} pt</p>
+            }
+          </div>
+        } @else {
+          <p class="hint">Épreuve non démarrée.</p>
+        }
+      }
+
+      @if (gameId === 'chips') {
+        @if (currentModule === 'chips') {
+          <div class="module-panel">
+            <h3 class="panel-title">{{ chipsView['chip_name'] }}</h3>
+            <p class="hint">{{ chipsView['flavors_to_guess_count'] }} goût(s) à deviner</p>
+            @if (!chipsSubmitted()) {
+              <input [(ngModel)]="chipsGuesses" placeholder="Goûts (virgules)" />
+              <button type="button" class="btn btn-primary w-full" (click)="chipsSubmit()">Envoyer</button>
+            } @else {
+              <p class="status-msg">Propositions envoyées ✓</p>
+            }
+            @if (chipsResult(); as r) {
+              <p class="status-msg ok">+{{ r.points }} pt</p>
+            }
+          </div>
+        } @else {
+          <p class="hint">Épreuve non démarrée.</p>
+        }
+      }
+
+      @if (gameId === 'molkky' || gameId === 'piscine' || gameId === 'poignards') {
+        @if (currentModule === gameId) {
+          <p class="hint">Épreuve en cours — suivez sur le terrain ou le grand écran.</p>
+        } @else if (myPoints(gameId) > 0) {
+          <p class="status-msg ok">+{{ myPoints(gameId) }} pt sur cette épreuve</p>
+        } @else {
+          <p class="hint">Pas encore de résultat pour votre équipe.</p>
+        }
+      }
+    </div>
+  </div>
+} @else {
+  <div class="page team-page">
+    @if (myTeam) {
+      <header class="header" [style.borderColor]="myTeam.color">
+        <div>
+          <div class="label">Équipe · {{ auth.auth()?.displayName }}</div>
+          <div class="font-bebas name" [style.color]="myTeam.color">{{ myTeam.name }}</div>
+        </div>
+        <div class="header-right">
+          <div class="font-bebas score" [style.color]="myTeam.color">{{ myTeam.score_total }}</div>
+          <button type="button" class="btn btn-ghost btn-sm switch-player" (click)="switchPlayer()">
+            Changer de joueur
+          </button>
+        </div>
+      </header>
+    }
+
+    <section class="scores-block card">
+      <button type="button" class="scores-toggle" (click)="showScores.set(!showScores())">
+        <span class="font-bebas">Classement</span>
+        <span class="chev">{{ showScores() ? '▾' : '▸' }}</span>
+      </button>
+
+      @if (showScores()) {
+        <table class="score-table">
+          <thead>
+            <tr><th>#</th><th>Équipe</th><th>Total</th></tr>
+          </thead>
+          <tbody>
+            @for (t of teams; track t.id; let i = $index) {
+              <tr [class.me]="t.id === myTeam?.id">
+                <td>{{ i + 1 }}</td>
+                <td><span class="dot" [style.background]="t.color"></span>{{ t.name }}</td>
+                <td class="pts" [style.color]="t.color">{{ t.score_total }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <div class="my-breakdown">
+          <div class="breakdown-title">Mes points par épreuve</div>
+          @for (g of games; track g.id) {
+            <div class="breakdown-row">
+              <span>{{ g.icon }} {{ g.label }}</span>
+              <span>{{ myPoints(g.id) || '—' }}</span>
+            </div>
+          }
+        </div>
       }
     </section>
-  }
 
-  @if (currentModule === 'chips') {
-    <section class="card module-card">
-      <h2 class="font-bebas">Chips — {{ chipsView['chip_name'] }}</h2>
-      <p class="hint">Dégustez à l'aveugle · {{ chipsView['flavors_to_guess_count'] }} goût(s) à deviner</p>
-      <input [(ngModel)]="chipsGuesses" placeholder="Vos propositions (séparées par virgule)" />
-      <button class="btn btn-primary btn-lg w-full" (click)="chipsSubmit()">Envoyer</button>
+    <section class="games-section">
+      <p class="section-hint">Tapez une épreuve pour jouer ou suivre en direct.</p>
+
+      @for (g of games; track g.id) {
+        <button
+          type="button"
+          class="game-card"
+          [class.live]="isGameLive(g.id)"
+          (click)="toggleGame(g.id)"
+        >
+          <span class="game-icon">{{ g.icon }}</span>
+          <span class="game-name">{{ g.label }}</span>
+          <span class="game-status" [class.live]="isGameLive(g.id)">{{ statusLabel(g.id) }}</span>
+        </button>
+      }
     </section>
-  }
-
-  @if (currentModule === 'molkky' || currentModule === 'piscine' || currentModule === 'poignards') {
-    <div class="waiting">
-      <p>Épreuve en cours — regardez le jeu !</p>
-    </div>
-  }
-</div>
+  </div>
+}

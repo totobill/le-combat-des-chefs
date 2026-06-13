@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from app.config import settings
 from app.database import get_db
@@ -29,12 +30,14 @@ async def join_team(body: JoinRequest, db: AsyncSession = Depends(get_db)) -> To
     team = result.scalar_one_or_none()
     if not team:
         raise HTTPException(status_code=404, detail="Équipe introuvable")
+    player_id = str(uuid.uuid4())
     token = create_token(
         {
             "role": "team",
             "sub": str(team.id),
             "team_id": str(team.id),
             "display_name": body.display_name,
+            "player_id": player_id,
         }
     )
     return TokenResponse(
@@ -42,4 +45,5 @@ async def join_team(body: JoinRequest, db: AsyncSession = Depends(get_db)) -> To
         role="team",
         team_id=str(team.id),
         display_name=body.display_name,
+        player_id=player_id,
     )

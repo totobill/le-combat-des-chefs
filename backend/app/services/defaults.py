@@ -1,5 +1,5 @@
 DEFAULT_SCORING = {
-    "mdp": {"points_per_word": 2, "placement": {"1": 20, "2": 12, "3": 6}},
+    "mdp": {"points_per_word": 2, "turn_sec": 30, "placement": {"1": 20, "2": 12, "3": 6}},
     "dcc": {"duo": 1, "carre": 3, "cash": 6, "placement": {"1": 10, "2": 6, "3": 3}},
     "chips": {
         "points_per_correct": 1,

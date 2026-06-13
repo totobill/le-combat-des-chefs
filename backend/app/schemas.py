@@ -20,6 +20,7 @@ class TokenResponse(BaseModel):
     role: str
     team_id: str | None = None
     display_name: str | None = None
+    player_id: str | None = None
 
 
 class TeamUpdate(BaseModel):
@@ -32,6 +33,7 @@ class TeamUpdate(BaseModel):
 class ScoreAdjust(BaseModel):
     team_id: UUID
     delta: int
+    module: str | None = None
 
 
 class BoardDisplay(BaseModel):
@@ -74,6 +76,10 @@ class DccQuestionCreate(BaseModel):
     cash_aliases: list[str] = []
 
 
+class DccQuestionsBulkCreate(BaseModel):
+    questions: list[DccQuestionCreate] = Field(min_length=1)
+
+
 class MdpWordsCreate(BaseModel):
     words: list[str] = Field(min_length=1)
 
@@ -82,13 +88,37 @@ class DccChooseRequest(BaseModel):
     mode: str  # duo, carre, cash
 
 
+class DccStartRequest(BaseModel):
+    question_id: UUID | None = None
+    team_id: UUID | None = None
+
+
+class DccStartEpisodeRequest(BaseModel):
+    team_id: UUID
+    question_ids: list[UUID] | None = None
+
+
+class DccSetTeamRequest(BaseModel):
+    team_id: UUID
+
+
+class DccCashValidateRequest(BaseModel):
+    team_id: UUID
+    correct: bool
+
+
 class DccAnswerRequest(BaseModel):
     answer: str | int  # index for duo/carre, string for cash
 
 
 class MdpStartRound(BaseModel):
     team_id: UUID
-    player_index: int
+    player_name: str = Field(min_length=1, max_length=100)
+
+
+class MdpHostJoin(BaseModel):
+    team_id: UUID
+    player_name: str = Field(min_length=1, max_length=100)
 
 
 class MdpNextWord(BaseModel):
